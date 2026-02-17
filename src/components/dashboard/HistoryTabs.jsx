@@ -1,7 +1,7 @@
-export default function HistoryTabs({ activeTab, onTabChange, buyCount = 0, sellCount = 0 }) {
+export default function HistoryTabs({ activeTab, onTabChange }) {
   const tabs = [
-    { id: 'buy', label: 'Buy History', emoji: '🛒', count: buyCount },
-    { id: 'sell', label: 'Sell History', emoji: '💰', count: sellCount },
+    { id: 'buy', label: 'Buy History', emoji: '🛒' },
+    { id: 'sell', label: 'Sell History', emoji: '💰' },
     { id: 'products', label: 'My Products', emoji: '📦' },
   ];
 
@@ -19,15 +19,6 @@ export default function HistoryTabs({ activeTab, onTabChange, buyCount = 0, sell
         >
           <span>{tab.emoji}</span>
           {tab.label}
-          {tab.count !== undefined && (
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-              activeTab === tab.id
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-            }`}>
-              {tab.count}
-            </span>
-          )}
         </button>
       ))}
     </div>

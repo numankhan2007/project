@@ -78,7 +78,6 @@ export const ORDER_STATUS_LABELS = {
 export const MOCK_USER = {
   id: 'stu_001',
   studentId: 'STU2024001',
-  studentIdCard: 'IDCARD2024001',
   username: 'alex_doe',
   email: 'alex.doe@student.annauniv.edu',
   phone: '9876543210',

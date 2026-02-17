@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, SlidersHorizontal } from 'lucide-react';
+import { Filter, X, SlidersHorizontal, IndianRupee, MapPin, Gift } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
-import { CATEGORIES, CONDITION_OPTIONS, SORT_OPTIONS } from '../../constants';
+import { CATEGORIES, CONDITION_OPTIONS, SORT_OPTIONS, CAMPUSES } from '../../constants';
 
 export default function ProductFilters({ filters, onFilterChange, onClear, totalResults = 0 }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -26,7 +26,27 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
     onFilterChange({ ...filters, sort: value });
   };
 
-  const activeFilterCount = [filters.category, filters.condition, filters.sort !== 'newest' ? filters.sort : ''].filter(Boolean).length;
+  const handlePriceChange = (field, value) => {
+    onFilterChange({ ...filters, [field]: value });
+  };
+
+  const handleCampusChange = (value) => {
+    onFilterChange({ ...filters, campus: value });
+  };
+
+  const handleFreeToggle = () => {
+    onFilterChange({ ...filters, freeOnly: !filters.freeOnly });
+  };
+
+  const activeFilterCount = [
+    filters.category,
+    filters.condition,
+    filters.sort !== 'newest' ? filters.sort : '',
+    filters.priceMin,
+    filters.priceMax,
+    filters.campus,
+    filters.freeOnly ? 'free' : '',
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-4">
@@ -120,6 +140,70 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
                 </div>
               </div>
 
+              {/* Price Range */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
+                  <IndianRupee size={14} /> Budget Range
+                </h4>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</span>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={filters.priceMin || ''}
+                      onChange={(e) => handlePriceChange('priceMin', e.target.value)}
+                      className="w-full pl-7 pr-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                      min="0"
+                    />
+                  </div>
+                  <span className="text-gray-400 text-sm font-medium">to</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={filters.priceMax || ''}
+                      onChange={(e) => handlePriceChange('priceMax', e.target.value)}
+                      className="w-full pl-7 pr-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Campus Filter */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
+                  <MapPin size={14} /> Campus / Location
+                </h4>
+                <select
+                  value={filters.campus || ''}
+                  onChange={(e) => handleCampusChange(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
+                >
+                  <option value="">All Campuses</option>
+                  {CAMPUSES.map((campus) => (
+                    <option key={campus} value={campus}>{campus}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Free Only Toggle */}
+              <div>
+                <button
+                  onClick={handleFreeToggle}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border
+                    ${filters.freeOnly
+                      ? 'bg-emerald-500 text-white border-transparent shadow-md shadow-emerald-500/20'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                    }`}
+                >
+                  <Gift size={16} />
+                  Free Items Only
+                </button>
+              </div>
+
               {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <div className="flex justify-end">
@@ -145,6 +229,24 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
           {filters.condition && (
             <Badge color="purple" className="cursor-pointer" onClick={() => handleConditionToggle(filters.condition)}>
               {filters.condition}
+              <X size={12} className="ml-1" />
+            </Badge>
+          )}
+          {(filters.priceMin || filters.priceMax) && (
+            <Badge color="cyan" className="cursor-pointer" onClick={() => onFilterChange({ ...filters, priceMin: '', priceMax: '' })}>
+              ₹{filters.priceMin || '0'} – ₹{filters.priceMax || '∞'}
+              <X size={12} className="ml-1" />
+            </Badge>
+          )}
+          {filters.campus && (
+            <Badge color="amber" className="cursor-pointer" onClick={() => handleCampusChange('')}>
+              {filters.campus}
+              <X size={12} className="ml-1" />
+            </Badge>
+          )}
+          {filters.freeOnly && (
+            <Badge color="emerald" className="cursor-pointer" onClick={handleFreeToggle}>
+              Free Only
               <X size={12} className="ml-1" />
             </Badge>
           )}

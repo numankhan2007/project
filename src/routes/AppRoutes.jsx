@@ -11,6 +11,7 @@ import Orders from '../pages/Orders';
 import ChatPage from '../pages/ChatPage';
 import SellProduct from '../pages/SellProduct';
 import HelpCenter from '../pages/HelpCenter';
+import TermsAndConditions from '../pages/TermsAndConditions';
 import NotFound from '../pages/NotFound';
 
 export default function AppRoutes() {
@@ -19,6 +20,7 @@ export default function AppRoutes() {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/terms" element={<TermsAndConditions />} />
 
       {/* Protected Routes */}
       <Route

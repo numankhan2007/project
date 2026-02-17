@@ -46,7 +46,6 @@ export function AuthProvider({ children }) {
         const userData = {
           id: 'stu_' + Date.now(),
           studentId: data.studentId.toUpperCase(),
-          studentIdCard: data.studentIdCard || '',
           username: data.username,
           email: data.email || '',
           phone: data.phone || '',

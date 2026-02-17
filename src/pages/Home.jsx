@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp, Zap, BadgeCheck, ArrowRight } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, BadgeCheck, Users } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import ProductFilters from '../components/product/ProductFilters';
 import { MOCK_PRODUCTS, CATEGORIES } from '../constants';
@@ -14,6 +14,10 @@ export default function Home() {
     category: searchParams.get('category') || '',
     condition: '',
     sort: 'newest',
+    priceMin: '',
+    priceMax: '',
+    campus: '',
+    freeOnly: false,
   });
 
   const filteredProducts = useMemo(() => {
@@ -40,6 +44,24 @@ export default function Home() {
       result = result.filter((p) => p.condition === filters.condition);
     }
 
+    // Price Range
+    if (filters.priceMin !== '') {
+      result = result.filter((p) => p.price >= Number(filters.priceMin));
+    }
+    if (filters.priceMax !== '') {
+      result = result.filter((p) => p.price <= Number(filters.priceMax));
+    }
+
+    // Campus
+    if (filters.campus) {
+      result = result.filter((p) => p.seller?.campus === filters.campus);
+    }
+
+    // Free Only
+    if (filters.freeOnly) {
+      result = result.filter((p) => p.price === 0);
+    }
+
     // Sort
     switch (filters.sort) {
       case 'price-low':
@@ -60,11 +82,11 @@ export default function Home() {
   }, [filters, searchQuery]);
 
   const clearFilters = () => {
-    setFilters({ category: '', condition: '', sort: 'newest' });
+    setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false });
   };
 
   const stats = [
-    { icon: Sparkles, label: 'Active Listings', value: MOCK_PRODUCTS.filter(p => p.status === 'available').length, color: 'indigo' },
+    { icon: Users, label: 'Registered Students', value: '1,250+', color: 'indigo' },
     { icon: TrendingUp, label: 'Categories', value: CATEGORIES.length, color: 'purple' },
     { icon: Zap, label: 'Quick Deals', value: '24h', color: 'pink' },
     { icon: BadgeCheck, label: 'Students', value: 'Verified', color: 'emerald' },
@@ -105,17 +127,7 @@ export default function Home() {
             <p className="text-lg text-gray-300 mt-6 max-w-xl mx-auto">
               The trusted marketplace for university students. Trade textbooks, electronics, notes, and more — safely and privately.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-              <Link to="/" className="btn-primary text-base !py-4 !px-8 shadow-xl shadow-indigo-500/20">
-                Start Browsing <ArrowRight size={18} className="ml-2" />
-              </Link>
-              <Link
-                to="/sell"
-                className="px-8 py-4 text-base font-semibold text-white border border-white/30 rounded-xl hover:bg-white/10 transition-all"
-              >
-                Sell a Product
-              </Link>
-            </div>
+
           </motion.div>
 
           {/* Stats */}
