@@ -5,6 +5,11 @@ export const CATEGORIES = [
   { id: 'electronics', name: 'Electronics', icon: '💻', color: 'cyan' },
   { id: 'notes', name: 'Notes & Study Material', icon: '📝', color: 'purple' },
   { id: 'sports', name: 'Sports Equipment', icon: '⚽', color: 'emerald' },
+  { id: 'accessories', name: 'Accessories', icon: '🎧', color: 'pink' },
+  { id: 'hostel', name: 'Hostel Essentials', icon: '🛋️', color: 'amber' },
+  { id: 'lab', name: 'Lab Equipment', icon: '🧪', color: 'rose' },
+  { id: 'art', name: 'Art & Craft', icon: '🎨', color: 'orange' },
+  { id: 'transport', name: 'Bicycles & Transport', icon: '🚲', color: 'teal' },
   { id: 'other', name: 'Other', icon: '📦', color: 'gray' },
 ];
 

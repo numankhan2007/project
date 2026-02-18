@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, MapPin, Calendar, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, GraduationCap, X, Check } from 'lucide-react';
+import { User, MapPin, Calendar, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, IdCard, X, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
 import HistoryTabs from '../components/dashboard/HistoryTabs';
@@ -9,7 +9,6 @@ import BuyHistory from '../components/dashboard/BuyHistory';
 import SellHistory from '../components/dashboard/SellHistory';
 import MyProducts from '../components/dashboard/MyProducts';
 import OTPModal from '../components/order/OTPModal';
-import Badge from '../components/common/Badge';
 import { getInitials, formatDate } from '../utils/helpers';
 
 export default function Dashboard() {
@@ -147,16 +146,14 @@ export default function Dashboard() {
                   </span>
                 )}
                 {user?.studentId && (
-                  <span className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg">
-                    <GraduationCap size={12} className="text-gray-400" />
-                    {user.studentId}
+                  <span className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800/30">
+                    <IdCard size={14} className="text-indigo-500" />
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-300">{user.studentId}</span>
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 mt-3">
-                <Badge color="indigo">{user?.studentId}</Badge>
-              </div>
+
             </div>
           </div>
 
@@ -184,8 +181,6 @@ export default function Dashboard() {
           <HistoryTabs
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            buyCount={buyOrders.length}
-            sellCount={sellOrders.length}
           />
           <div className="mt-4">
             {activeTab === 'buy' ? (

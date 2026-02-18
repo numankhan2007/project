@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, SlidersHorizontal, IndianRupee, MapPin, Gift } from 'lucide-react';
+import { Filter, X, SlidersHorizontal, IndianRupee, MapPin, Gift, Calendar, BadgeCheck, Tag } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 import { CATEGORIES, CONDITION_OPTIONS, SORT_OPTIONS, CAMPUSES } from '../../constants';
+
+const PRICE_PRESETS = [
+  { label: 'Under ₹500', min: '', max: '500' },
+  { label: '₹500 – ₹2K', min: '500', max: '2000' },
+  { label: '₹2K – ₹5K', min: '2000', max: '5000' },
+  { label: 'Above ₹5K', min: '5000', max: '' },
+];
+
+const DATE_POSTED_OPTIONS = [
+  { value: 'today', label: 'Today' },
+  { value: '7days', label: 'Last 7 days' },
+  { value: '30days', label: 'Last 30 days' },
+];
 
 export default function ProductFilters({ filters, onFilterChange, onClear, totalResults = 0 }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -30,12 +43,32 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
     onFilterChange({ ...filters, [field]: value });
   };
 
+  const handlePricePreset = (min, max) => {
+    const isActive = filters.priceMin === min && filters.priceMax === max;
+    onFilterChange({
+      ...filters,
+      priceMin: isActive ? '' : min,
+      priceMax: isActive ? '' : max,
+    });
+  };
+
   const handleCampusChange = (value) => {
     onFilterChange({ ...filters, campus: value });
   };
 
   const handleFreeToggle = () => {
     onFilterChange({ ...filters, freeOnly: !filters.freeOnly });
+  };
+
+  const handleDatePostedChange = (value) => {
+    onFilterChange({
+      ...filters,
+      datePosted: filters.datePosted === value ? '' : value,
+    });
+  };
+
+  const handleVerifiedToggle = () => {
+    onFilterChange({ ...filters, verifiedOnly: !filters.verifiedOnly });
   };
 
   const activeFilterCount = [
@@ -46,6 +79,8 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
     filters.priceMax,
     filters.campus,
     filters.freeOnly ? 'free' : '',
+    filters.datePosted,
+    filters.verifiedOnly ? 'verified' : '',
   ].filter(Boolean).length;
 
   return (
@@ -140,10 +175,35 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
                 </div>
               </div>
 
-              {/* Price Range */}
+              {/* Quick Price Presets */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
-                  <IndianRupee size={14} /> Budget Range
+                  <Tag size={14} /> Quick Budget
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {PRICE_PRESETS.map((preset) => {
+                    const isActive = filters.priceMin === preset.min && filters.priceMax === preset.max;
+                    return (
+                      <button
+                        key={preset.label}
+                        onClick={() => handlePricePreset(preset.min, preset.max)}
+                        className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border
+                          ${isActive
+                            ? 'bg-indigo-500 text-white border-transparent shadow-md shadow-indigo-500/20'
+                            : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                          }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Price Range */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
+                  <IndianRupee size={14} /> Custom Budget Range
                 </h4>
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
@@ -172,6 +232,28 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
                 </div>
               </div>
 
+              {/* Date Posted */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
+                  <Calendar size={14} /> Date Posted
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {DATE_POSTED_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleDatePostedChange(option.value)}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border
+                        ${filters.datePosted === option.value
+                          ? 'bg-purple-500 text-white border-transparent shadow-md shadow-purple-500/20'
+                          : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Campus Filter */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">
@@ -189,8 +271,9 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
                 </select>
               </div>
 
-              {/* Free Only Toggle */}
-              <div>
+              {/* Toggle Filters Row */}
+              <div className="flex flex-wrap gap-3">
+                {/* Free Only Toggle */}
                 <button
                   onClick={handleFreeToggle}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border
@@ -201,6 +284,19 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
                 >
                   <Gift size={16} />
                   Free Items Only
+                </button>
+
+                {/* Verified Seller Toggle */}
+                <button
+                  onClick={handleVerifiedToggle}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border
+                    ${filters.verifiedOnly
+                      ? 'bg-blue-500 text-white border-transparent shadow-md shadow-blue-500/20'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                    }`}
+                >
+                  <BadgeCheck size={16} />
+                  Verified Sellers Only
                 </button>
               </div>
 
@@ -238,6 +334,12 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
               <X size={12} className="ml-1" />
             </Badge>
           )}
+          {filters.datePosted && (
+            <Badge color="purple" className="cursor-pointer" onClick={() => handleDatePostedChange(filters.datePosted)}>
+              {DATE_POSTED_OPTIONS.find((o) => o.value === filters.datePosted)?.label}
+              <X size={12} className="ml-1" />
+            </Badge>
+          )}
           {filters.campus && (
             <Badge color="amber" className="cursor-pointer" onClick={() => handleCampusChange('')}>
               {filters.campus}
@@ -250,8 +352,15 @@ export default function ProductFilters({ filters, onFilterChange, onClear, total
               <X size={12} className="ml-1" />
             </Badge>
           )}
+          {filters.verifiedOnly && (
+            <Badge color="blue" className="cursor-pointer" onClick={handleVerifiedToggle}>
+              Verified Sellers
+              <X size={12} className="ml-1" />
+            </Badge>
+          )}
         </div>
       )}
     </div>
   );
 }
+

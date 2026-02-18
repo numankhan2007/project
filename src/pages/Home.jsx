@@ -18,6 +18,8 @@ export default function Home() {
     priceMax: '',
     campus: '',
     freeOnly: false,
+    datePosted: '',
+    verifiedOnly: false,
   });
 
   const filteredProducts = useMemo(() => {
@@ -82,7 +84,7 @@ export default function Home() {
   }, [filters, searchQuery]);
 
   const clearFilters = () => {
-    setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false });
+    setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false, datePosted: '', verifiedOnly: false });
   };
 
   const stats = [
