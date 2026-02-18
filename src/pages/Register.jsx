@@ -26,7 +26,9 @@ export default function Register() {
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   // OTP State
-  const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification
+  const [step, setStep] = useState(1); // 1 = form, 2 = OTP selection & verification
+  const [otpMethod, setOtpMethod] = useState(''); // '' | 'phone' | 'email'
+  const [otpSent, setOtpSent] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [otpError, setOtpError] = useState('');
@@ -62,14 +64,21 @@ export default function Register() {
     return String(Math.floor(100000 + Math.random() * 900000));
   };
 
-  const handleSendOtp = async (e) => {
+  const handleProceedToVerify = (e) => {
     e.preventDefault();
     const errs = validateForm();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
+    setStep(2);
+    setOtpSent(false); // Reset to selection screen
+    setEnteredOtp('');
+    setOtpError('');
+  };
 
+  const handleSendOtpCode = async (method) => {
+    setOtpMethod(method);
     setOtpSending(true);
     // Simulate sending OTP (mock delay)
     await new Promise((r) => setTimeout(r, 1000));
@@ -78,9 +87,11 @@ export default function Register() {
     setOtpTimer(60);
     setEnteredOtp('');
     setOtpError('');
-    setStep(2);
+    setOtpSent(true);
     setOtpSending(false);
-    showSuccess(`📱 Your OTP is: ${otp} (sent to +91 ${formData.phone})`);
+    
+    const destination = method === 'phone' ? `+91 ${formData.phone}` : formData.email;
+    showSuccess(`📱 Your OTP is: ${otp} (sent to ${destination})`);
   };
 
   const handleResendOtp = async () => {
@@ -93,7 +104,9 @@ export default function Register() {
     setEnteredOtp('');
     setOtpError('');
     setOtpSending(false);
-    showSuccess(`📱 New OTP: ${otp} (resent to +91 ${formData.phone})`);
+    
+    const destination = otpMethod === 'phone' ? `+91 ${formData.phone}` : formData.email;
+    showSuccess(`📱 New OTP: ${otp} (resent to ${destination})`);
   };
 
   const handleVerifyAndRegister = async (e) => {
@@ -186,7 +199,9 @@ export default function Register() {
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               {step === 1
                 ? 'Verify with your Student ID Number to get started'
-                : `Enter the 6-digit OTP sent to +91 ${formData.phone}`
+                : !otpSent 
+                  ? 'Choose how you want to receive your OTP'
+                  : `Enter the 6-digit OTP sent to ${otpMethod === 'phone' ? '+91 ' + formData.phone : formData.email}`
               }
             </p>
           </div>
@@ -221,7 +236,7 @@ export default function Register() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleSendOtp}
+                onSubmit={handleProceedToVerify}
                 className="space-y-3.5"
               >
                 {/* Primary Verification - Student ID Number */}
@@ -334,111 +349,156 @@ export default function Register() {
                   {errors.agreeTerms && <p className="text-sm text-rose-500 ml-7">⚠ {errors.agreeTerms}</p>}
                 </div>
 
-                <Button type="submit" variant="primary" size="lg" fullWidth loading={otpSending} icon={ArrowRight} iconPosition="right">
-                  Send OTP & Continue
+                <Button type="submit" variant="primary" size="lg" fullWidth icon={ArrowRight} iconPosition="right">
+                  Continue Verification
                 </Button>
               </motion.form>
             ) : (
               /* ═══════════ STEP 2: OTP Verification ═══════════ */
-              <motion.form
+              <motion.div
                 key="step2"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                onSubmit={handleVerifyAndRegister}
                 className="space-y-5"
               >
-                {/* OTP Info Card */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
-                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">OTP Sent Successfully</p>
-                  </div>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
-                    A 6-digit verification code has been sent to <strong>+91 {formData.phone}</strong>. 
-                    Check the notification bar for your OTP.
-                  </p>
-                </div>
-
-                {/* OTP Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Enter 6-digit OTP <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="flex gap-2 justify-center">
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <input
-                        key={i}
-                        id={`otp-${i}`}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={enteredOtp[i] || ''}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/, '');
-                          const newOtp = enteredOtp.split('');
-                          newOtp[i] = val;
-                          setEnteredOtp(newOtp.join(''));
-                          setOtpError('');
-                          // Auto-focus next input
-                          if (val && i < 5) {
-                            document.getElementById(`otp-${i + 1}`)?.focus();
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Backspace' && !enteredOtp[i] && i > 0) {
-                            document.getElementById(`otp-${i - 1}`)?.focus();
-                          }
-                        }}
-                        className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                          ${otpError
-                            ? 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/10'
-                            : enteredOtp[i]
-                              ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/10'
-                              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
-                          } text-gray-900 dark:text-white`}
-                        autoFocus={i === 0}
-                      />
-                    ))}
-                  </div>
-                  {otpError && (
-                    <p className="text-sm text-rose-500 text-center">⚠ {otpError}</p>
-                  )}
-                </div>
-
-                {/* Timer & Resend */}
-                <div className="flex items-center justify-center gap-2 text-sm">
-                  {otpTimer > 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Resend OTP in <span className="font-bold text-indigo-600 dark:text-indigo-400">{otpTimer}s</span>
-                    </p>
-                  ) : (
+                {!otpSent ? (
+                  /* --- Sub-step: Choose Method --- */
+                  <div className="space-y-4">
+                     <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
+                       We need to verify your account. Please select where you would like to receive your One-Time Password (OTP).
+                     </p>
                     <button
-                      type="button"
-                      onClick={handleResendOtp}
+                      onClick={() => handleSendOtpCode('phone')}
                       disabled={otpSending}
-                      className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-50"
+                      className="w-full relative group p-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 transition-all text-left flex items-center gap-4 shadow-sm hover:shadow-md"
                     >
-                      <RotateCcw size={14} />
-                      Resend OTP
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <Phone size={24} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white">Via SMS</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">+91 {formData.phone}</p>
+                      </div>
                     </button>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div className="space-y-3">
-                  <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ShieldCheck}>
-                    Verify & Create Account
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => { setStep(1); setEnteredOtp(''); setOtpError(''); }}
-                    className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                  >
-                    ← Back to form
-                  </button>
-                </div>
-              </motion.form>
+                    <button
+                      onClick={() => handleSendOtpCode('email')}
+                      disabled={otpSending}
+                      className="w-full relative group p-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 transition-all text-left flex items-center gap-4 shadow-sm hover:shadow-md"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Mail size={24} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white">Via Email</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{formData.email}</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setStep(1)}
+                      className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mt-4"
+                    >
+                      ← Back to details
+                    </button>
+                  </div>
+                ) : (
+                  /* --- Sub-step: Verify OTP --- */
+                  <form onSubmit={handleVerifyAndRegister} className="space-y-5">
+                    {/* OTP Info Card */}
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
+                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">OTP Sent Successfully</p>
+                      </div>
+                      <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
+                        A 6-digit verification code has been sent to <strong>{otpMethod === 'phone' ? `+91 ${formData.phone}` : formData.email}</strong>. 
+                        Check your {otpMethod === 'phone' ? 'messages' : 'inbox'} for your OTP.
+                      </p>
+                    </div>
+
+                    {/* OTP Input */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enter 6-digit OTP <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex gap-2 justify-center">
+                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                          <input
+                            key={i}
+                            id={`otp-${i}`}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={enteredOtp[i] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/, '');
+                              const newOtp = enteredOtp.split('');
+                              newOtp[i] = val;
+                              setEnteredOtp(newOtp.join(''));
+                              setOtpError('');
+                              // Auto-focus next input
+                              if (val && i < 5) {
+                                document.getElementById(`otp-${i + 1}`)?.focus();
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Backspace' && !enteredOtp[i] && i > 0) {
+                                document.getElementById(`otp-${i - 1}`)?.focus();
+                              }
+                            }}
+                            className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+                              ${otpError
+                                ? 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/10'
+                                : enteredOtp[i]
+                                  ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/10'
+                                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
+                              } text-gray-900 dark:text-white`}
+                            autoFocus={i === 0}
+                          />
+                        ))}
+                      </div>
+                      {otpError && (
+                        <p className="text-sm text-rose-500 text-center">⚠ {otpError}</p>
+                      )}
+                    </div>
+
+                    {/* Timer & Resend */}
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      {otpTimer > 0 ? (
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Resend OTP in <span className="font-bold text-indigo-600 dark:text-indigo-400">{otpTimer}s</span>
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          disabled={otpSending}
+                          className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-50"
+                        >
+                          <RotateCcw size={14} />
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-3">
+                      <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ShieldCheck}>
+                        Verify & Create Account
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpError(''); }}
+                        className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      >
+                        ← Change verification method
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </motion.div>
             )}
           </AnimatePresence>
 
