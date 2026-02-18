@@ -1,0 +1,5 @@
+﻿* 0cdb876 UI improvements: ID card display, new categories, OLX-inspired filters
+* 75094fd  feat: enhance marketplace with advanced filters terms page and UI improvements
+* 5e3989a fix: configure for GitHub Pages deployment
+* 90ed3a8 feat: UNIMART frontend with all modifications
+* 93df879 Initial commit

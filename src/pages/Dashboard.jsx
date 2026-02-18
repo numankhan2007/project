@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, MapPin, Calendar, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, IdCard, X, Check } from 'lucide-react';
+import { User, MapPin, Calendar, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, CreditCard, X, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
 import HistoryTabs from '../components/dashboard/HistoryTabs';
@@ -147,7 +147,7 @@ export default function Dashboard() {
                 )}
                 {user?.studentId && (
                   <span className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800/30">
-                    <IdCard size={14} className="text-indigo-500" />
+                    <CreditCard size={14} className="text-indigo-500" />
                     <span className="font-semibold text-indigo-700 dark:text-indigo-300">{user.studentId}</span>
                   </span>
                 )}
