@@ -1,5 +1,0 @@
-﻿.gitignore
-404.html
-assets/index-BlH00EgN.css
-assets/index-CUZLVGr4.js
-index.html

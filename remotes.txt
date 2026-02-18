@@ -1,2 +1,0 @@
-﻿origin	https://github.com/numankhan2007/project.git (fetch)
-origin	https://github.com/numankhan2007/project.git (push)

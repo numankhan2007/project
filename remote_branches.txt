@@ -1,3 +1,0 @@
-﻿  origin/HEAD -> origin/main
-  origin/gh-pages
-  origin/main
