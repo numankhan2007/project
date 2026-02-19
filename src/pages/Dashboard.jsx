@@ -123,8 +123,16 @@ export default function Dashboard() {
 
               <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1">
+                  <GraduationCap size={14} />
+                  {user?.university}
+                </span>
+                <span className="flex items-center gap-1">
                   <MapPin size={14} />
-                  {user?.campus}
+                  {user?.college}
+                </span>
+                <span className="flex items-center gap-1">
+                  <User size={14} />
+                  {user?.department}
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar size={14} />

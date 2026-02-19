@@ -49,7 +49,10 @@ export function AuthProvider({ children }) {
           username: data.username,
           email: data.email || '',
           phone: data.phone || '',
-          campus: data.campus,
+          university: data.university,
+          college: data.college,
+          department: data.department,
+          campus: data.college, // Mapping college to campus for backward compatibility
           avatar: null,
           verified: true,
           createdAt: new Date().toISOString(),

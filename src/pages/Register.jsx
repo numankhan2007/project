@@ -7,6 +7,7 @@ import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { CAMPUSES } from '../constants';
+import { TAMILNADU_UNIVERSITIES } from '../constants/universities';
 
 export default function Register() {
   const { register } = useAuth();
@@ -17,7 +18,9 @@ export default function Register() {
     username: '',
     email: '',
     phone: '',
-    campus: '',
+    university: '',
+    college: '',
+    department: '',
     password: '',
     confirmPassword: '',
   });
@@ -52,7 +55,9 @@ export default function Register() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = 'Enter a valid email address';
     if (!formData.phone.trim()) errs.phone = 'Phone number is required';
     else if (!/^[6-9]\d{9}$/.test(formData.phone)) errs.phone = 'Enter a valid 10-digit Indian phone number';
-    if (!formData.campus) errs.campus = 'Please select your campus';
+    if (!formData.university) errs.university = 'Please select your university';
+    if (!formData.college) errs.college = 'Please select your college';
+    if (!formData.department) errs.department = 'Please select your department';
     if (!formData.password) errs.password = 'Password is required';
     else if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
     if (formData.password !== formData.confirmPassword) errs.confirmPassword = 'Passwords do not match';
@@ -135,6 +140,27 @@ export default function Register() {
   const updateField = (field, value) => {
     setFormData({ ...formData, [field]: value });
     setErrors({ ...errors, [field]: '' });
+  };
+
+  const handleUniversityChange = (e) => {
+    const university = e.target.value;
+    setFormData({
+      ...formData,
+      university,
+      college: '',
+      department: ''
+    });
+    setErrors({ ...errors, university: '', college: '', department: '' });
+  };
+
+  const handleCollegeChange = (e) => {
+    const college = e.target.value;
+    setFormData({
+      ...formData,
+      college,
+      department: ''
+    });
+    setErrors({ ...errors, college: '', department: '' });
   };
 
   return (
@@ -289,22 +315,65 @@ export default function Register() {
                 />
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Campus <span className="text-rose-500">*</span>
+                    University <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <GraduationCap size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      value={formData.university}
+                      onChange={handleUniversityChange}
+                      className="input-field pl-10 appearance-none"
+                    >
+                      <option value="">Select your university</option>
+                      {Object.keys(TAMILNADU_UNIVERSITIES).map((uni) => (
+                        <option key={uni} value={uni}>{uni}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.university && <p className="text-sm text-rose-500">⚠ {errors.university}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    College / Campus <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <select
-                      value={formData.campus}
-                      onChange={(e) => updateField('campus', e.target.value)}
-                      className="input-field pl-10 appearance-none"
+                      value={formData.college}
+                      onChange={handleCollegeChange}
+                      disabled={!formData.university}
+                      className="input-field pl-10 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">Select your campus</option>
-                      {CAMPUSES.map((campus) => (
-                        <option key={campus} value={campus}>{campus}</option>
+                      <option value="">Select your college</option>
+                      {formData.university && Object.keys(TAMILNADU_UNIVERSITIES[formData.university] || {}).map((college) => (
+                        <option key={college} value={college}>{college}</option>
                       ))}
                     </select>
                   </div>
-                  {errors.campus && <p className="text-sm text-rose-500">⚠ {errors.campus}</p>}
+                  {errors.college && <p className="text-sm text-rose-500">⚠ {errors.college}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Department <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      value={formData.department}
+                      onChange={(e) => updateField('department', e.target.value)}
+                      disabled={!formData.college}
+                      className="input-field pl-10 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select your department</option>
+                      {formData.university && formData.college && 
+                        (TAMILNADU_UNIVERSITIES[formData.university]?.[formData.college] || []).map((dept) => (
+                          <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.department && <p className="text-sm text-rose-500">⚠ {errors.department}</p>}
                 </div>
                 <Input
                   label="Password"
