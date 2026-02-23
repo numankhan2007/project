@@ -1,14 +1,29 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Menu, X, ShoppingBag, Plus, Bell, Home,
-  User, Package, ShoppingCart, History, HelpCircle,
-  LogOut, Sun, Moon, ChevronDown, BadgeCheck, Tag
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { getInitials } from '../../utils/helpers';
+  Search,
+  Menu,
+  X,
+  ShoppingBag,
+  Plus,
+  Bell,
+  Home,
+  User,
+  Package,
+  ShoppingCart,
+  History,
+  HelpCircle,
+  LogOut,
+  Sun,
+  Moon,
+  ChevronDown,
+  BadgeCheck,
+  Tag,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import { getInitials } from "../../utils/helpers";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -17,8 +32,9 @@ export default function Navbar() {
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -26,14 +42,26 @@ export default function Navbar() {
         setShowDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
     setShowMobileMenu(false);
     setShowDropdown(false);
   }, [location.pathname]);
+
+  // Auto-open mobile search if search param is present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("search") === "true" && window.innerWidth < 768) {
+      setShowMobileMenu(true);
+      // Short delay to allow animation/render
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 300);
+    }
+  }, [location.search]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -44,27 +72,40 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const navLinks = [
-    { to: '/', label: 'Browse', icon: ShoppingBag },
-    { to: '/sell', label: 'Sell', icon: Plus },
-    { to: '/orders', label: 'Orders', icon: Package },
+    { to: "/", label: "Browse", icon: ShoppingBag },
+    { to: "/sell", label: "Sell", icon: Plus },
+    { to: "/orders", label: "Orders", icon: Package },
   ];
 
   const dropdownItems = [
-    { label: 'My Profile', icon: User, action: () => navigate('/dashboard') },
-    { label: 'My Products', icon: Tag, action: () => navigate('/dashboard?tab=products') },
-    { label: 'My Orders', icon: Package, action: () => navigate('/orders') },
-    { label: 'Buy History', icon: ShoppingCart, action: () => navigate('/dashboard?tab=buy') },
-    { label: 'Sell History', icon: History, action: () => navigate('/dashboard?tab=sell') },
-    { label: 'Help Center', icon: HelpCircle, action: () => navigate('/help') },
+    { label: "My Profile", icon: User, action: () => navigate("/dashboard") },
+    {
+      label: "My Products",
+      icon: Tag,
+      action: () => navigate("/dashboard?tab=products"),
+    },
+    { label: "My Orders", icon: Package, action: () => navigate("/orders") },
+    {
+      label: "Buy History",
+      icon: ShoppingCart,
+      action: () => navigate("/dashboard?tab=buy"),
+    },
+    {
+      label: "Sell History",
+      icon: History,
+      action: () => navigate("/dashboard?tab=sell"),
+    },
+    { label: "Help Center", icon: HelpCircle, action: () => navigate("/help") },
   ];
 
   const isLinkActive = (link) => {
     if (link.exact) return location.pathname === link.to && !location.search;
-    if (link.to.includes('?')) return location.pathname + location.search === link.to;
+    if (link.to.includes("?"))
+      return location.pathname + location.search === link.to;
     return location.pathname === link.to;
   };
 
@@ -84,9 +125,15 @@ export default function Navbar() {
 
           {/* Search Bar - Desktop */}
           {isAuthenticated && (
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-6">
+            <form
+              onSubmit={handleSearch}
+              className="hidden md:flex flex-1 max-w-md mx-6"
+            >
               <div className="relative w-full">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="text"
                   placeholder="Search products..."
@@ -109,9 +156,10 @@ export default function Navbar() {
                       key={link.label}
                       to={link.to}
                       className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
-                        ${isLinkActive(link)
-                          ? 'gradient-bg text-white shadow-md'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ${
+                          isLinkActive(link)
+                            ? "gradient-bg text-white shadow-md"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                         }`}
                     >
                       <link.icon size={16} />
@@ -126,6 +174,19 @@ export default function Navbar() {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
                 </button>
 
+                {/* Mobile Search Toggle */}
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(!showMobileMenu);
+                    if (!showMobileMenu) {
+                      setTimeout(() => searchInputRef.current?.focus(), 300);
+                    }
+                  }}
+                  className="md:hidden p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                >
+                  <Search size={22} />
+                </button>
+
                 {/* Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -134,9 +195,13 @@ export default function Navbar() {
                   >
                     <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white text-xs font-bold overflow-hidden">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={user.avatar}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        getInitials(user?.username || 'U')
+                        getInitials(user?.username || "U")
                       )}
                     </div>
                     <span className="hidden lg:flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -147,7 +212,7 @@ export default function Navbar() {
                     </span>
                     <ChevronDown
                       size={14}
-                      className={`hidden lg:block text-gray-400 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`}
+                      className={`hidden lg:block text-gray-400 transition-transform duration-200 ${showDropdown ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -163,7 +228,9 @@ export default function Navbar() {
                         {/* Profile Header */}
                         <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-b border-gray-100 dark:border-gray-700">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.username}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                              {user?.username}
+                            </p>
                             {user?.verified && (
                               <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full">
                                 <BadgeCheck size={12} />
@@ -171,8 +238,12 @@ export default function Navbar() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{user?.campus}</p>
-                          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mt-1">{user?.studentId}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {user?.campus}
+                          </p>
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mt-1">
+                            {user?.studentId}
+                          </p>
                         </div>
 
                         {/* Menu Items */}
@@ -198,8 +269,12 @@ export default function Navbar() {
                             onClick={toggleTheme}
                             className="w-full flex items-center gap-3 px-0 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           >
-                            {darkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-indigo-500" />}
-                            {darkMode ? 'Light Mode' : 'Dark Mode'}
+                            {darkMode ? (
+                              <Sun size={16} className="text-amber-500" />
+                            ) : (
+                              <Moon size={16} className="text-indigo-500" />
+                            )}
+                            {darkMode ? "Light Mode" : "Dark Mode"}
                           </button>
                         </div>
 
@@ -232,7 +307,11 @@ export default function Navbar() {
                   onClick={toggleTheme}
                   className="p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                 >
-                  {darkMode ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} className="text-indigo-500" />}
+                  {darkMode ? (
+                    <Sun size={20} className="text-amber-500" />
+                  ) : (
+                    <Moon size={20} className="text-indigo-500" />
+                  )}
                 </button>
                 <Link
                   to="/login"
@@ -256,7 +335,7 @@ export default function Navbar() {
           {showMobileMenu && isAuthenticated && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="md:hidden overflow-hidden border-t border-gray-100 dark:border-gray-800"
@@ -264,8 +343,12 @@ export default function Navbar() {
               {/* Mobile Search */}
               <form onSubmit={handleSearch} className="p-3">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
                   <input
+                    ref={searchInputRef}
                     type="text"
                     placeholder="Search products..."
                     value={searchQuery}
@@ -282,9 +365,10 @@ export default function Navbar() {
                     key={link.label}
                     to={link.to}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                      ${isLinkActive(link)
-                        ? 'gradient-bg text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ${
+                        isLinkActive(link)
+                          ? "gradient-bg text-white"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
                   >
                     <link.icon size={18} />
