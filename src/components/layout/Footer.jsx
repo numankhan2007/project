@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Github, Twitter, Instagram, Heart } from 'lucide-react';
+import { ShoppingBag, Heart, Send, Mail, Youtube, Facebook, Twitter, Gitlab } from 'lucide-react';
 import { CATEGORIES } from '../../constants';
 
 export default function Footer() {
+  const vglugSocialLinks = [
+    { icon: Send, url: 'https://t.me/vpmglug', label: 'Telegram' },
+    { icon: Mail, url: 'https://www.freelists.org/list/villupuramglug', label: 'Mailing List' },
+    { icon: Youtube, url: 'https://www.youtube.com/channel/UCztecD7qSCgqcb59r0G3GHg', label: 'Youtube' },
+    { icon: Facebook, url: 'https://www.facebook.com/vpmglug/', label: 'Facebook' },
+    { icon: Twitter, url: 'http://www.twitter.com/vpmglug', label: 'Twitter' },
+    { icon: Gitlab, url: 'https://gitlab.com/villupuramglug/', label: 'Gitlab' },
+  ];
+
   return (
     <footer className="bg-gray-900 dark:bg-black text-gray-400 border-t border-gray-800">
       {/* Main Footer */}
@@ -20,14 +29,17 @@ export default function Footer() {
               The premier student-only marketplace. Buy and sell textbooks, electronics, and more with
               verified fellow students on campus.
             </p>
-            <div className="flex gap-3">
-              {[Github, Twitter, Instagram].map((Icon, i) => (
+            <div className="flex flex-wrap gap-3">
+              {vglugSocialLinks.map((social, i) => (
                 <a
                   key={i}
-                  href="#"
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
                   className="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all hover:scale-110"
                 >
-                  <Icon size={18} />
+                  <social.icon size={18} />
                 </a>
               ))}
             </div>
@@ -60,7 +72,7 @@ export default function Footer() {
                 { to: '/orders', label: 'My Orders' },
                 { to: '/dashboard', label: 'Dashboard' },
                 { to: '/help', label: 'Help Center' },
-                { to: '#', label: 'About Us' },
+                { to: '/about', label: 'About Us' },
                 { to: '/terms', label: 'Terms of Service' },
               ].map((link, i) => (
                 <li key={i}>
