@@ -61,10 +61,10 @@ export default function Dashboard() {
       >
         {/* Profile Header */}
         <div className="card p-6 lg:p-8">
-          <div className="flex flex-row items-start text-left gap-4 sm:gap-6 relative">
+          <div className="flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-5 sm:gap-6 relative">
             {/* Avatar with upload */}
             <div className="relative group shrink-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 gradient-bg rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-indigo-500/20 overflow-hidden">
+              <div className="w-24 h-24 sm:w-20 sm:h-20 gradient-bg rounded-2xl flex items-center justify-center text-white text-3xl sm:text-2xl font-bold shadow-lg shadow-indigo-500/20 overflow-hidden">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -75,7 +75,7 @@ export default function Dashboard() {
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all cursor-pointer"
               >
-                <Camera size={16} className="text-white" />
+                <Camera size={20} className="text-white" />
               </button>
               <input
                 ref={fileInputRef}
@@ -86,16 +86,16 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="flex-1 min-w-0 w-full flex flex-col items-start">
+            <div className="flex-1 min-w-0 w-full flex flex-col items-center sm:items-start">
               {/* Username with edit and verified badge */}
-              <div className="flex items-center justify-start gap-2 w-full flex-wrap">
+              <div className="flex items-center justify-center sm:justify-start gap-2 w-full flex-wrap">
                 {editingUsername ? (
-                  <div className="flex items-center justify-start gap-2 w-full max-w-sm">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 w-full max-w-sm">
                     <input
                       type="text"
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.target.value)}
-                      className="text-lg font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                      className="text-xl font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
                       autoFocus
                     />
                     <button onClick={handleSaveUsername} className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-200 transition-colors shrink-0">
@@ -107,33 +107,39 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-full">{user?.username}</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate max-w-full">{user?.username}</h1>
                     {user?.verified && (
-                      <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">
-                        <BadgeCheck size={12} className="sm:w-3.5 sm:h-3.5" />
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">
+                        <BadgeCheck size={14} />
                         Verified
                       </span>
                     )}
-                    <button onClick={() => setEditingUsername(true)} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 transition-all shrink-0">
-                      <Pencil size={12} />
+                    <button onClick={() => setEditingUsername(true)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 transition-all shrink-0">
+                      <Pencil size={14} />
                     </button>
                   </>
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start justify-start gap-x-3 gap-y-1 mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <GraduationCap size={14} className="shrink-0 text-indigo-500" />
-                  <span className="truncate max-w-[200px] sm:max-w-none">{user?.university}</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin size={14} className="shrink-0 text-purple-500" />
-                  <span className="truncate max-w-[200px] sm:max-w-none">{user?.college}</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <User size={14} className="shrink-0 text-pink-500" />
-                  <span className="truncate max-w-[200px] sm:max-w-none">{user?.department}</span>
-                </span>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-2 mt-3 sm:mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {user?.university && (
+                  <span className="flex items-center gap-1.5">
+                    <GraduationCap size={14} className="shrink-0 text-indigo-500" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">{user.university}</span>
+                  </span>
+                )}
+                {user?.college && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} className="shrink-0 text-purple-500" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">{user.college}</span>
+                  </span>
+                )}
+                {user?.department && (
+                  <span className="flex items-center gap-1.5">
+                    <User size={14} className="shrink-0 text-pink-500" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">{user.department}</span>
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5 shrink-0">
                   <Calendar size={14} className="shrink-0" />
                   Joined {formatDate(user?.createdAt)}
@@ -141,17 +147,23 @@ export default function Dashboard() {
               </div>
 
               {/* Contact & ID Info */}
-              <div className="flex flex-wrap items-center justify-start gap-2 mt-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                {user?.studentId && (
-                  <span className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-500/20 shrink-0" title="Student ID">
-                    <GraduationCap size={12} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
-                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">{user.studentId}</span>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mt-3 sm:mt-2.5 text-xs text-gray-500 dark:text-gray-400">
+                {user?.email && (
+                  <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                    <Mail size={12} className="text-gray-400 shrink-0" />
+                    <span className="truncate max-w-[180px] sm:max-w-none">{user.email}</span>
                   </span>
                 )}
-                {user?.email && (
-                  <span className="hidden sm:flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                    <Mail size={12} className="text-gray-400 shrink-0" />
-                    <span className="truncate">{user.email}</span>
+                {user?.phone && (
+                  <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50 shrink-0">
+                    <Phone size={12} className="text-gray-400 shrink-0" />
+                    +91 {user.phone}
+                  </span>
+                )}
+                {user?.studentId && (
+                  <span className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-500/20 shrink-0" title="Student ID">
+                    <GraduationCap size={12} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">{user.studentId}</span>
                   </span>
                 )}
               </div>
