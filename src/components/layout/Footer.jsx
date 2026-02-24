@@ -4,12 +4,12 @@ import { CATEGORIES } from '../../constants';
 
 export default function Footer() {
   const vglugSocialLinks = [
-    { icon: Send, url: 'https://t.me/vpmglug', label: 'Telegram' },
-    { icon: Mail, url: 'https://www.freelists.org/list/villupuramglug', label: 'Mailing List' },
-    { icon: Youtube, url: 'https://www.youtube.com/channel/UCztecD7qSCgqcb59r0G3GHg', label: 'Youtube' },
-    { icon: Facebook, url: 'https://www.facebook.com/vpmglug/', label: 'Facebook' },
-    { icon: Twitter, url: 'http://www.twitter.com/vpmglug', label: 'Twitter' },
-    { icon: Gitlab, url: 'https://gitlab.com/villupuramglug/', label: 'Gitlab' },
+    { icon: Send, url: 'https://t.me/vpmglug', label: 'Telegram', color: 'hover:bg-sky-500 hover:text-white' },
+    { icon: Mail, url: 'https://www.freelists.org/list/villupuramglug', label: 'Mailing List', color: 'hover:bg-amber-500 hover:text-white' },
+    { icon: Youtube, url: 'https://www.youtube.com/channel/UCztecD7qSCgqcb59r0G3GHg', label: 'Youtube', color: 'hover:bg-red-600 hover:text-white' },
+    { icon: Facebook, url: 'https://www.facebook.com/vpmglug/', label: 'Facebook', color: 'hover:bg-blue-600 hover:text-white' },
+    { icon: Twitter, url: 'http://www.twitter.com/vpmglug', label: 'Twitter', color: 'hover:bg-cyan-500 hover:text-white' },
+    { icon: Gitlab, url: 'https://gitlab.com/villupuramglug/', label: 'Gitlab', color: 'hover:bg-orange-500 hover:text-white' },
   ];
 
   return (
@@ -29,7 +29,7 @@ export default function Footer() {
               The premier student-only marketplace. Buy and sell textbooks, electronics, and more with
               verified fellow students on campus.
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {vglugSocialLinks.map((social, i) => (
                 <a
                   key={i}
@@ -37,9 +37,10 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all hover:scale-110"
+                  title={social.label}
+                  className={`w-8 h-8 rounded-lg bg-gray-800 ${social.color} flex items-center justify-center transition-all hover:scale-110 text-gray-400`}
                 >
-                  <social.icon size={18} />
+                  <social.icon size={14} />
                 </a>
               ))}
             </div>

@@ -158,10 +158,9 @@ export default function Home() {
       <section className="section-padding py-8 -mt-6 relative z-10">
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {CATEGORIES.map((cat) => (
-            <Link
+            <button
               key={cat.id}
-              to={`/?category=${cat.id}`}
-              onClick={() => setFilters({ ...filters, category: cat.id })}
+              onClick={() => setFilters({ ...filters, category: filters.category === cat.id ? '' : cat.id })}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium transition-all border shadow-sm
                 ${filters.category === cat.id
                   ? 'gradient-bg text-white border-transparent shadow-md'
@@ -170,7 +169,10 @@ export default function Home() {
             >
               <span className="text-lg">{cat.icon}</span>
               {cat.name}
-            </Link>
+              {filters.category === cat.id && (
+                <span className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-white/25 text-white text-xs font-bold leading-none">✕</span>
+              )}
+            </button>
           ))}
         </div>
       </section>

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Shield, AlertTriangle, Users, ShoppingBag, Lock, Scale, FileText, ChevronUp, Ban } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const sections = [
   {
@@ -123,6 +124,7 @@ const sections = [
 
 export default function TermsAndConditions() {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 400);
@@ -216,27 +218,29 @@ export default function TermsAndConditions() {
         </div>
 
         {/* Agreement Footer */}
-        <div className="mt-10 text-center">
-          <div className="card p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-200 dark:border-indigo-800/30">
-            <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">
-              By using UNIMART, you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions.
-            </p>
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <Link
-                to="/register"
-                className="px-6 py-2.5 gradient-bg text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all"
-              >
-                Create Account
-              </Link>
-              <Link
-                to="/"
-                className="px-6 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-semibold border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 transition-all"
-              >
-                Back to Home
-              </Link>
+        {!isAuthenticated && (
+          <div className="mt-10 text-center">
+            <div className="card p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-200 dark:border-indigo-800/30">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">
+                By using UNIMART, you acknowledge that you have read, understood, and agree to be bound by these Terms &amp; Conditions.
+              </p>
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <Link
+                  to="/register"
+                  className="px-6 py-2.5 gradient-bg text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all"
+                >
+                  Create Account
+                </Link>
+                <Link
+                  to="/"
+                  className="px-6 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-semibold border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 transition-all"
+                >
+                  Back to Home
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </motion.div>
 
       {/* Scroll to Top */}

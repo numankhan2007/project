@@ -14,7 +14,7 @@ const AboutUs = () => {
     {
       icon: Target,
       title: 'Our Mission',
-      description: 'Let’s bring the concept of free software to all the people of our country. Use and encouraging the improvement of free software in industry and academia.',
+      description: "Let's bring the concept of free software to all the people of our country. Use and encouraging the improvement of free software in industry and academia.",
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10'
     },
@@ -79,7 +79,6 @@ const AboutUs = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         <div className="section-padding py-20 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -126,12 +125,12 @@ const AboutUs = () => {
       <div className="bg-white dark:bg-gray-900 py-20 border-y border-gray-200 dark:border-gray-800">
         <div className="section-padding">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Contribution to FOSS & Society</h2>
+            <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Contribution to FOSS &amp; Society</h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               We live in a Society, and not contributing to a society is not fair. Here are some of our key contributions.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {contributions.map((comp, i) => (
               <motion.div
@@ -164,7 +163,7 @@ const AboutUs = () => {
               Our efforts have been recognized by various esteemed organizations and leaders.
             </p>
           </div>
-          
+
           <div className="space-y-6">
             {recognitions.map((item, i) => (
               <motion.div
