@@ -59,6 +59,60 @@ export const CAMPUSES = [
   'School of Excellence in Law, Chennai',
 ];
 
+// Mock student registry for verify-first registration flow
+// Each entry includes official email for masked-email OTP verification
+export const STUDENT_REGISTRY = {
+  '20124UBCA081': {
+    name: 'NUMAN KHAN. M',
+    email: 'm.numankhan2007@gmail.com',
+    university: 'ANNAMALAI UNIVERSITY',
+    college: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
+    department: 'BCA',
+  },
+  'STU2024001': {
+    name: 'Alex Doe',
+    email: 'alex.doe@student.annauniv.edu',
+    university: 'Anna University',
+    college: 'College of Engineering, Guindy (CEG)',
+    department: 'Computer Science and Engineering',
+  },
+  'STU2024002': {
+    name: 'Priya Sharma',
+    email: 'priya.s@loyola.edu',
+    university: 'University of Madras',
+    college: 'Loyola College',
+    department: 'B.Sc. Computer Science',
+  },
+  'STU2024003': {
+    name: 'Karthik R',
+    email: 'karthik.r@psg.edu',
+    university: 'Bharathiar University',
+    college: 'PSG College of Arts & Science',
+    department: 'B.Com. General',
+  },
+  'STU2024004': {
+    name: 'Deepa M',
+    email: 'deepa.m@mit.annauniv.edu',
+    university: 'Anna University',
+    college: 'Madras Institute of Technology (MIT)',
+    department: 'Aeronautical Engineering',
+  },
+  'STU2024005': {
+    name: 'Ravi Kumar',
+    email: 'ravi.k@bishopheber.edu',
+    university: 'Bharathidasan University',
+    college: 'Bishop Heber College',
+    department: 'B.Sc. Mathematics',
+  },
+};
+
+// Helper to mask email: "alex.doe@gmail.com" → "a***e@gmail.com"
+export const maskEmail = (email) => {
+  const [local, domain] = email.split('@');
+  if (local.length <= 2) return local[0] + '***@' + domain;
+  return local[0] + '***' + local[local.length - 1] + '@' + domain;
+};
+
 export const ORDER_STATUS = {
   PENDING: 'pending',
   ACCEPTED: 'accepted',
@@ -77,14 +131,19 @@ export const ORDER_STATUS_LABELS = {
 
 export const MOCK_USER = {
   id: 'stu_001',
-  studentId: 'STU2024001',
-  username: 'alex_doe',
-  email: 'alex.doe@student.annauniv.edu',
-  phone: '9876543210',
-  campus: 'Anna University, Chennai',
+  studentId: '20124UBCA081',
+  name: 'NUMAN KHAN. M',
+  username: 'numan_khan',
+  email: 'm.numankhan2007@gmail.com',
+  phone: '8610264946',
+  university: 'ANNAMALAI UNIVERSITY',
+  college: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
+  department: 'BCA',
+  campus: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
   avatar: null,
   verified: true,
-  createdAt: '2024-09-01',
+  usernameChangeCount: 0,
+  createdAt: '2026-02-28',
 };
 
 export const MOCK_PRODUCTS = [

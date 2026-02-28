@@ -1,20 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Lock, User, MapPin, ArrowRight, Mail, Phone, ShieldCheck, RotateCcw } from 'lucide-react';
+import { GraduationCap, Lock, User, ArrowRight, Mail, Phone, ShieldCheck, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { CAMPUSES } from '../constants';
-import { TAMILNADU_UNIVERSITIES } from '../constants/universities';
+import { STUDENT_REGISTRY, maskEmail } from '../constants';
+
+// Username & password validation rules
+const validateCredential = (value, label) => {
+  const errors = [];
+  if (value.length < 8) errors.push('At least 8 characters');
+  if (!/[A-Z]/.test(value)) errors.push('At least one uppercase letter');
+  if (!/[a-z]/.test(value)) errors.push('At least one lowercase letter');
+  if (!/[0-9]/.test(value)) errors.push('At least one number');
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(value)) errors.push('At least one special character');
+  return errors;
+};
 
 export default function Register() {
   const { register } = useAuth();
   const { error: showError, success: showSuccess } = useNotifications();
   const navigate = useNavigate();
+
+  // ── Flow phases ──
+  // 'enter_reg'    → Only register number input + Verify button
+  // 'otp_email'    → Masked email shown, enter OTP (primary path)
+  // 'manual_email' → "I don't have access" path: enter email manually → verify email → auto-fill
+  // 'manual_otp'   → OTP sent to manual email
+  // 'fill_form'    → Registration form (auto-filled academic fields + editable name/username/password)
+  const [phase, setPhase] = useState('enter_reg');
+
   const [formData, setFormData] = useState({
     studentId: '',
+    name: '',
     username: '',
     email: '',
     phone: '',
@@ -28,15 +48,21 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  // OTP State
-  const [step, setStep] = useState(1); // 1 = form, 2 = OTP selection & verification
-  const [otpMethod, setOtpMethod] = useState(''); // '' | 'phone' | 'email'
-  const [otpSent, setOtpSent] = useState(false);
+  // Verification state
+  const [verifying, setVerifying] = useState(false);
+  const [registryRecord, setRegistryRecord] = useState(null);
+  const [maskedEmail, setMaskedEmail] = useState('');
+
+  // OTP state
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
   const [otpSending, setOtpSending] = useState(false);
+
+  // Manual email
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
 
   // OTP countdown timer
   useEffect(() => {
@@ -46,59 +72,116 @@ export default function Register() {
     }
   }, [otpTimer]);
 
-  const validateForm = () => {
-    const errs = {};
-    if (!formData.studentId.trim()) errs.studentId = 'Student ID Number is required';
-    if (!formData.username.trim()) errs.username = 'Username is required';
-    else if (formData.username.length < 3) errs.username = 'Username must be at least 3 characters';
-    if (!formData.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = 'Enter a valid email address';
-    if (!formData.phone.trim()) errs.phone = 'Phone number is required';
-    else if (!/^[6-9]\d{9}$/.test(formData.phone)) errs.phone = 'Enter a valid 10-digit Indian phone number';
-    if (!formData.university) errs.university = 'Please select your university';
-    if (!formData.college) errs.college = 'Please select your college';
-    if (!formData.department) errs.department = 'Please select your department';
-    if (!formData.password) errs.password = 'Password is required';
-    else if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword) errs.confirmPassword = 'Passwords do not match';
-    if (!agreeTerms) errs.agreeTerms = 'You must agree to the Terms & Conditions';
-    return errs;
-  };
+  const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
-  const generateOtp = () => {
-    return String(Math.floor(100000 + Math.random() * 900000));
-  };
-
-  const handleProceedToVerify = (e) => {
-    e.preventDefault();
-    const errs = validateForm();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+  // ── STEP 1: Verify register number ──
+  const handleVerifyRegNumber = async () => {
+    const id = formData.studentId.trim().toUpperCase();
+    if (!id) {
+      setErrors({ studentId: 'Register Number is required' });
       return;
     }
-    setStep(2);
-    setOtpSent(false); // Reset to selection screen
+
+    setVerifying(true);
+    await new Promise((r) => setTimeout(r, 1200));
+
+    const record = STUDENT_REGISTRY[id];
+    if (record) {
+      setRegistryRecord(record);
+      setMaskedEmail(maskEmail(record.email));
+      // Send OTP to the official email
+      const otp = generateOtp();
+      setGeneratedOtp(otp);
+      setOtpTimer(60);
+      setEnteredOtp('');
+      setOtpError('');
+      setPhase('otp_email');
+      showSuccess(`📧 OTP sent to ${maskEmail(record.email)}. Your OTP is: ${otp}`);
+    } else {
+      showError('❌ Register Number not found in the database. Please check and try again.');
+    }
+    setVerifying(false);
+  };
+
+  // ── Verify OTP (primary path — official email) ──
+  const handleVerifyOfficialOtp = () => {
+    if (!enteredOtp.trim()) { setOtpError('Please enter the OTP'); return; }
+    if (enteredOtp !== generatedOtp) { setOtpError('Invalid OTP. Please try again.'); return; }
+
+    // Auto-fill all fields from registry
+    setFormData((prev) => ({
+      ...prev,
+      studentId: prev.studentId.toUpperCase(),
+      name: registryRecord.name,
+      email: registryRecord.email,
+      phone: '',
+      university: registryRecord.university,
+      college: registryRecord.college,
+      department: registryRecord.department,
+    }));
+    setPhase('fill_form');
+    showSuccess('✅ Email verified! Complete your profile below.');
+  };
+
+  // ── "I don't have access to mail" → manual email path ──
+  const handleNoAccessToMail = () => {
+    setPhase('manual_email');
     setEnteredOtp('');
     setOtpError('');
   };
 
-  const handleSendOtpCode = async (method) => {
-    setOtpMethod(method);
+  // ── Verify manual email ──
+  const handleVerifyManualEmail = async () => {
+    if (!manualEmail.trim()) {
+      setErrors({ manualEmail: 'Email is required' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(manualEmail)) {
+      setErrors({ manualEmail: 'Enter a valid email address' });
+      return;
+    }
+    if (!manualPhone.trim()) {
+      setErrors({ manualPhone: 'Phone number is required' });
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(manualPhone)) {
+      setErrors({ manualPhone: 'Enter a valid 10-digit phone number' });
+      return;
+    }
+
     setOtpSending(true);
-    // Simulate sending OTP (mock delay)
     await new Promise((r) => setTimeout(r, 1000));
     const otp = generateOtp();
     setGeneratedOtp(otp);
     setOtpTimer(60);
     setEnteredOtp('');
     setOtpError('');
-    setOtpSent(true);
+    setPhase('manual_otp');
     setOtpSending(false);
-    
-    const destination = method === 'phone' ? `+91 ${formData.phone}` : formData.email;
-    showSuccess(`📱 Your OTP is: ${otp} (sent to ${destination})`);
+    showSuccess(`📧 OTP sent to ${manualEmail}. Your OTP is: ${otp}`);
   };
 
+  // ── Verify manual email OTP ──
+  const handleVerifyManualOtp = () => {
+    if (!enteredOtp.trim()) { setOtpError('Please enter the OTP'); return; }
+    if (enteredOtp !== generatedOtp) { setOtpError('Invalid OTP. Please try again.'); return; }
+
+    // Auto-fill academic fields from registry (register number already verified)
+    setFormData((prev) => ({
+      ...prev,
+      studentId: prev.studentId.toUpperCase(),
+      name: registryRecord?.name || '',
+      email: manualEmail,
+      phone: manualPhone,
+      university: registryRecord?.university || '',
+      college: registryRecord?.college || '',
+      department: registryRecord?.department || '',
+    }));
+    setPhase('fill_form');
+    showSuccess('✅ Email verified! Academic details auto-filled. Complete your profile.');
+  };
+
+  // ── Resend OTP ──
   const handleResendOtp = async () => {
     if (otpTimer > 0) return;
     setOtpSending(true);
@@ -109,21 +192,35 @@ export default function Register() {
     setEnteredOtp('');
     setOtpError('');
     setOtpSending(false);
-    
-    const destination = otpMethod === 'phone' ? `+91 ${formData.phone}` : formData.email;
-    showSuccess(`📱 New OTP: ${otp} (resent to ${destination})`);
+    const dest = phase === 'otp_email' ? maskedEmail : manualEmail;
+    showSuccess(`📧 New OTP: ${otp} (resent to ${dest})`);
   };
 
-  const handleVerifyAndRegister = async (e) => {
+  // ── Final form validation ──
+  const validateForm = () => {
+    const errs = {};
+    if (!formData.name.trim()) errs.name = 'Name is required';
+    if (!formData.username.trim()) errs.username = 'Username is required';
+    else {
+      const usernameErrs = validateCredential(formData.username, 'Username');
+      if (usernameErrs.length > 0) errs.username = usernameErrs.join(', ');
+    }
+    if (!formData.email.trim()) errs.email = 'Email is required';
+    if (!formData.password) errs.password = 'Password is required';
+    else {
+      const pwdErrs = validateCredential(formData.password, 'Password');
+      if (pwdErrs.length > 0) errs.password = pwdErrs.join(', ');
+      else if (formData.password === formData.username) errs.password = 'Password must not be the same as username';
+    }
+    if (formData.password !== formData.confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    if (!agreeTerms) errs.agreeTerms = 'You must agree to the Terms & Conditions';
+    return errs;
+  };
+
+  const handleSubmitRegistration = async (e) => {
     e.preventDefault();
-    if (!enteredOtp.trim()) {
-      setOtpError('Please enter the OTP');
-      return;
-    }
-    if (enteredOtp !== generatedOtp) {
-      setOtpError('Invalid OTP. Please try again.');
-      return;
-    }
+    const errs = validateForm();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
     setLoading(true);
     try {
@@ -142,25 +239,120 @@ export default function Register() {
     setErrors({ ...errors, [field]: '' });
   };
 
-  const handleUniversityChange = (e) => {
-    const university = e.target.value;
-    setFormData({
-      ...formData,
-      university,
-      college: '',
-      department: ''
-    });
-    setErrors({ ...errors, university: '', college: '', department: '' });
+  // ── Credential rules indicator component ──
+  const renderRulesIndicator = (value, label, compareValue) => {
+    const rules = [
+      { test: (v) => v.length >= 8, label: '8+ characters' },
+      { test: (v) => /[A-Z]/.test(v), label: 'Uppercase' },
+      { test: (v) => /[a-z]/.test(v), label: 'Lowercase' },
+      { test: (v) => /[0-9]/.test(v), label: 'Number' },
+      { test: (v) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(v), label: 'Special char' },
+    ];
+    if (compareValue !== undefined) {
+      rules.push({ test: (v) => v !== compareValue || !v, label: `≠ ${label === 'Password' ? 'Username' : 'Password'}` });
+    }
+    if (!value) return null;
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {rules.map((rule) => (
+          <span
+            key={rule.label}
+            className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+              rule.test(value)
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            {rule.test(value) ? '✓' : '○'} {rule.label}
+          </span>
+        ))}
+      </div>
+    );
   };
 
-  const handleCollegeChange = (e) => {
-    const college = e.target.value;
-    setFormData({
-      ...formData,
-      college,
-      department: ''
-    });
-    setErrors({ ...errors, college: '', department: '' });
+  // ── OTP Input (render function, NOT component — avoids remount on state change) ──
+  const renderOtpInput = () => (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Enter 6-digit OTP <span className="text-rose-500">*</span>
+      </label>
+      <div className="flex gap-2 justify-center">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <input
+            key={i}
+            id={`otp-${i}`}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={enteredOtp[i] || ''}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/, '');
+              const newOtp = enteredOtp.split('');
+              newOtp[i] = val;
+              setEnteredOtp(newOtp.join(''));
+              setOtpError('');
+              if (val && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Backspace' && !enteredOtp[i] && i > 0)
+                document.getElementById(`otp-${i - 1}`)?.focus();
+            }}
+            className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50
+              ${otpError
+                ? 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/10'
+                : enteredOtp[i]
+                  ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/10'
+                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
+              } text-gray-900 dark:text-white`}
+            autoFocus={i === 0}
+          />
+        ))}
+      </div>
+      {otpError && <p className="text-sm text-rose-500 text-center">⚠ {otpError}</p>}
+    </div>
+  );
+
+  // ── Timer & Resend (render function) ──
+  const renderTimerResend = () => (
+    <div className="flex items-center justify-center gap-2 text-sm">
+      {otpTimer > 0 ? (
+        <p className="text-gray-500 dark:text-gray-400">
+          Resend OTP in <span className="font-bold text-indigo-600 dark:text-indigo-400">{otpTimer}s</span>
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={handleResendOtp}
+          disabled={otpSending}
+          className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-50"
+        >
+          <RotateCcw size={14} />
+          Resend OTP
+        </button>
+      )}
+    </div>
+  );
+
+  // ── Phase title/subtitle ──
+  const getTitle = () => {
+    switch (phase) {
+      case 'enter_reg': return 'Create Account';
+      case 'otp_email': return 'Verify Email';
+      case 'manual_email': return 'Alternate Verification';
+      case 'manual_otp': return 'Verify Email';
+      case 'fill_form': return 'Complete Registration';
+      default: return 'Create Account';
+    }
+  };
+  const getSubtitle = () => {
+    switch (phase) {
+      case 'enter_reg': return 'Enter your Register Number to get started';
+      case 'otp_email': return `We've sent an OTP to ${maskedEmail}`;
+      case 'manual_email': return 'Enter your personal email and phone for verification';
+      case 'manual_otp': return `Enter the OTP sent to ${manualEmail}`;
+      case 'fill_form': return 'Your academic details have been verified. Set up your credentials.';
+      default: return '';
+    }
   };
 
   return (
@@ -189,7 +381,7 @@ export default function Register() {
             Create your account and start trading with students on your campus today.
           </p>
           <div className="mt-8 space-y-3 text-left max-w-xs mx-auto">
-            {['ID Number verified accounts', 'Phone OTP verification', 'Secure OTP delivery', 'Campus-wide marketplace'].map((feature, i) => (
+            {['Register Number verified accounts', 'Official academic records', 'Secure OTP verification', 'Campus-wide marketplace'].map((feature, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: -20 }}
@@ -219,61 +411,28 @@ export default function Register() {
               </div>
               <span className="text-2xl font-bold gradient-text">UNIMART</span>
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {step === 1 ? 'Create Account' : 'Verify OTP'}
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
-              {step === 1
-                ? 'Verify with your Student ID Number to get started'
-                : !otpSent 
-                  ? 'Choose how you want to receive your OTP'
-                  : `Enter the 6-digit OTP sent to ${otpMethod === 'phone' ? '+91 ' + formData.phone : formData.email}`
-              }
-            </p>
-          </div>
-
-          {/* Step Indicator */}
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              step === 1 ? 'gradient-bg text-white' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-            }`}>
-              {step === 1 ? '1' : '✓'} Details
-            </div>
-            <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full gradient-bg"
-                initial={{ width: '0%' }}
-                animate={{ width: step === 2 ? '100%' : '0%' }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              step === 2 ? 'gradient-bg text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-            }`}>
-              2 OTP
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{getTitle()}</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">{getSubtitle()}</p>
           </div>
 
           <AnimatePresence mode="wait">
-            {step === 1 ? (
-              /* ═══════════ STEP 1: Registration Form ═══════════ */
-              <motion.form
-                key="step1"
+            {/* ═══════════ PHASE: Enter Register Number ═══════════ */}
+            {phase === 'enter_reg' && (
+              <motion.div
+                key="enter_reg"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleProceedToVerify}
-                className="space-y-3.5"
+                className="space-y-4"
               >
-                {/* Primary Verification - Student ID Number */}
                 <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-800/30">
                   <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2 flex items-center gap-1">
                     <GraduationCap size={14} /> Primary Verification
                   </p>
                   <Input
-                    label="Student ID Number"
+                    label="Register Number"
                     name="studentId"
-                    placeholder="e.g. STU2024001"
+                    placeholder="e.g. 20124UBCA081"
                     value={formData.studentId}
                     onChange={(e) => updateField('studentId', e.target.value)}
                     error={errors.studentId}
@@ -281,111 +440,268 @@ export default function Register() {
                     required
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleVerifyRegNumber}
+                  disabled={verifying}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {verifying ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify'
+                  )}
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══════════ PHASE: OTP to Official Email ═══════════ */}
+            {phase === 'otp_email' && (
+              <motion.div
+                key="otp_email"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-5"
+              >
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">OTP Sent</p>
+                  </div>
+                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
+                    A 6-digit verification code has been sent to <strong>{maskedEmail}</strong>. Check your inbox.
+                  </p>
+                </div>
+
+                {renderOtpInput()}
+                {renderTimerResend()}
+
+                <button
+                  type="button"
+                  onClick={handleVerifyOfficialOtp}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                >
+                  <ShieldCheck size={18} />
+                  Verify OTP
+                </button>
+
+                {/* "I don't have access" */}
+                <button
+                  type="button"
+                  onClick={handleNoAccessToMail}
+                  className="w-full flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium transition-colors"
+                >
+                  <AlertTriangle size={14} />
+                  I don't have access to this mail
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setPhase('enter_reg'); setEnteredOtp(''); setOtpError(''); }}
+                  className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  ← Back
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══════════ PHASE: Manual Email Entry ═══════════ */}
+            {phase === 'manual_email' && (
+              <motion.div
+                key="manual_email"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-4"
+              >
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30">
+                  <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                    <AlertTriangle size={13} />
+                    Enter your personal email and phone number. We'll verify your email and pull your academic details from the official database.
+                  </p>
+                </div>
+
                 <Input
-                  label="Username"
-                  name="username"
-                  placeholder="Choose a username"
-                  value={formData.username}
-                  onChange={(e) => updateField('username', e.target.value)}
-                  error={errors.username}
-                  icon={User}
-                  required
-                />
-                <Input
-                  label="Email Address"
-                  name="email"
+                  label="Personal Email ID"
+                  name="manualEmail"
                   type="email"
                   placeholder="your.email@gmail.com"
-                  value={formData.email}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  error={errors.email}
+                  value={manualEmail}
+                  onChange={(e) => { setManualEmail(e.target.value); setErrors({ ...errors, manualEmail: '' }); }}
+                  error={errors.manualEmail}
                   icon={Mail}
                   required
                 />
                 <Input
                   label="Phone Number"
-                  name="phone"
+                  name="manualPhone"
                   type="tel"
                   placeholder="e.g. 9876543210"
-                  value={formData.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
-                  error={errors.phone}
+                  value={manualPhone}
+                  onChange={(e) => { setManualPhone(e.target.value); setErrors({ ...errors, manualPhone: '' }); }}
+                  error={errors.manualPhone}
                   icon={Phone}
                   required
                 />
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    University <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <GraduationCap size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      value={formData.university}
-                      onChange={handleUniversityChange}
-                      className="input-field pl-10 appearance-none"
-                    >
-                      <option value="">Select your university</option>
-                      {Object.keys(TAMILNADU_UNIVERSITIES).map((uni) => (
-                        <option key={uni} value={uni}>{uni}</option>
-                      ))}
-                    </select>
+
+                <button
+                  type="button"
+                  onClick={handleVerifyManualEmail}
+                  disabled={otpSending}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-60"
+                >
+                  {otpSending ? 'Sending OTP...' : 'Verify Email'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPhase('otp_email')}
+                  className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  ← Back to official email verification
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══════════ PHASE: Manual Email OTP ═══════════ */}
+            {phase === 'manual_otp' && (
+              <motion.div
+                key="manual_otp"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-5"
+              >
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">OTP Sent</p>
                   </div>
-                  {errors.university && <p className="text-sm text-rose-500">⚠ {errors.university}</p>}
+                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
+                    A 6-digit code has been sent to <strong>{manualEmail}</strong>.
+                  </p>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    College / Campus <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      value={formData.college}
-                      onChange={handleCollegeChange}
-                      disabled={!formData.university}
-                      className="input-field pl-10 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select your college</option>
-                      {formData.university && Object.keys(TAMILNADU_UNIVERSITIES[formData.university] || {}).map((college) => (
-                        <option key={college} value={college}>{college}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {errors.college && <p className="text-sm text-rose-500">⚠ {errors.college}</p>}
+                {renderOtpInput()}
+                {renderTimerResend()}
+
+                <button
+                  type="button"
+                  onClick={handleVerifyManualOtp}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25"
+                >
+                  <ShieldCheck size={18} />
+                  Verify & Continue
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setPhase('manual_email'); setEnteredOtp(''); setOtpError(''); }}
+                  className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  ← Change email
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══════════ PHASE: Registration Form ═══════════ */}
+            {phase === 'fill_form' && (
+              <motion.form
+                key="fill_form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleSubmitRegistration}
+                className="space-y-3.5"
+              >
+                {/* Auto-filled Official Records */}
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30">
+                  <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    Official Records — Auto-populated from university database
+                  </p>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Department <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      value={formData.department}
-                      onChange={(e) => updateField('department', e.target.value)}
-                      disabled={!formData.college}
-                      className="input-field pl-10 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select your department</option>
-                      {formData.university && formData.college && 
-                        (TAMILNADU_UNIVERSITIES[formData.university]?.[formData.college] || []).map((dept) => (
-                          <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
+                {[
+                  { label: 'Register Number', value: formData.studentId, icon: GraduationCap },
+                  { label: 'Name', value: formData.name, icon: User },
+                  { label: 'University', value: formData.university, icon: GraduationCap },
+                  { label: 'College', value: formData.college, icon: GraduationCap },
+                  { label: 'Department', value: formData.department, icon: User },
+                  { label: 'Email', value: formData.email, icon: Mail },
+                ].map((field) => (
+                  <div key={field.label} className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {field.label}
+                    </label>
+                    <div className="relative flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 opacity-75 cursor-not-allowed">
+                      <field.icon size={16} className="text-gray-400 shrink-0" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{field.value}</span>
+                      <Lock size={14} className="text-gray-400 shrink-0" />
+                    </div>
                   </div>
-                  {errors.department && <p className="text-sm text-rose-500">⚠ {errors.department}</p>}
+                ))}
+
+                {/* Phone (editable if not set) */}
+                {!formData.phone && (
+                  <Input
+                    label="Phone Number"
+                    name="phone"
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={formData.phone}
+                    onChange={(e) => updateField('phone', e.target.value)}
+                    error={errors.phone}
+                    icon={Phone}
+                    required
+                  />
+                )}
+
+                {/* Editable Fields */}
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-1">
+                    <User size={14} /> Setup Your Credentials
+                  </p>
                 </div>
-                <Input
-                  label="Password"
-                  name="password"
-                  type="password"
-                  placeholder="Create a password (min 6 chars)"
-                  value={formData.password}
-                  onChange={(e) => updateField('password', e.target.value)}
-                  error={errors.password}
-                  icon={Lock}
-                  required
-                />
+
+                <div>
+                  <Input
+                    label="Username"
+                    name="username"
+                    placeholder="Choose a username"
+                    value={formData.username}
+                    onChange={(e) => updateField('username', e.target.value)}
+                    error={errors.username}
+                    icon={User}
+                    required
+                  />
+                  {renderRulesIndicator(formData.username, 'Username')}
+                </div>
+
+                <div>
+                  <Input
+                    label="Password"
+                    name="password"
+                    type="password"
+                    placeholder="Create a strong password"
+                    value={formData.password}
+                    onChange={(e) => updateField('password', e.target.value)}
+                    error={errors.password}
+                    icon={Lock}
+                    required
+                  />
+                  {renderRulesIndicator(formData.password, 'Password', formData.username)}
+                </div>
+
                 <Input
                   label="Confirm Password"
                   name="confirmPassword"
@@ -398,7 +714,7 @@ export default function Register() {
                   required
                 />
 
-                {/* Terms & Conditions */}
+                {/* Terms */}
                 <div className="space-y-1.5">
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <input
@@ -418,156 +734,10 @@ export default function Register() {
                   {errors.agreeTerms && <p className="text-sm text-rose-500 ml-7">⚠ {errors.agreeTerms}</p>}
                 </div>
 
-                <Button type="submit" variant="primary" size="lg" fullWidth icon={ArrowRight} iconPosition="right">
-                  Continue Verification
+                <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ArrowRight} iconPosition="right">
+                  Create Account
                 </Button>
               </motion.form>
-            ) : (
-              /* ═══════════ STEP 2: OTP Verification ═══════════ */
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-5"
-              >
-                {!otpSent ? (
-                  /* --- Sub-step: Choose Method --- */
-                  <div className="space-y-4">
-                     <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-2">
-                       We need to verify your account. Please select where you would like to receive your One-Time Password (OTP).
-                     </p>
-                    <button
-                      onClick={() => handleSendOtpCode('phone')}
-                      disabled={otpSending}
-                      className="w-full relative group p-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 transition-all text-left flex items-center gap-4 shadow-sm hover:shadow-md"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                        <Phone size={24} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900 dark:text-white">Via SMS</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">+91 {formData.phone}</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleSendOtpCode('email')}
-                      disabled={otpSending}
-                      className="w-full relative group p-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 transition-all text-left flex items-center gap-4 shadow-sm hover:shadow-md"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <Mail size={24} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900 dark:text-white">Via Email</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{formData.email}</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setStep(1)}
-                      className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mt-4"
-                    >
-                      ← Back to details
-                    </button>
-                  </div>
-                ) : (
-                  /* --- Sub-step: Verify OTP --- */
-                  <form onSubmit={handleVerifyAndRegister} className="space-y-5">
-                    {/* OTP Info Card */}
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400" />
-                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">OTP Sent Successfully</p>
-                      </div>
-                      <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70">
-                        A 6-digit verification code has been sent to <strong>{otpMethod === 'phone' ? `+91 ${formData.phone}` : formData.email}</strong>. 
-                        Check your {otpMethod === 'phone' ? 'messages' : 'inbox'} for your OTP.
-                      </p>
-                    </div>
-
-                    {/* OTP Input */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enter 6-digit OTP <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="flex gap-2 justify-center">
-                        {[0, 1, 2, 3, 4, 5].map((i) => (
-                          <input
-                            key={i}
-                            id={`otp-${i}`}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={enteredOtp[i] || ''}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/, '');
-                              const newOtp = enteredOtp.split('');
-                              newOtp[i] = val;
-                              setEnteredOtp(newOtp.join(''));
-                              setOtpError('');
-                              // Auto-focus next input
-                              if (val && i < 5) {
-                                document.getElementById(`otp-${i + 1}`)?.focus();
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Backspace' && !enteredOtp[i] && i > 0) {
-                                document.getElementById(`otp-${i - 1}`)?.focus();
-                              }
-                            }}
-                            className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                              ${otpError
-                                ? 'border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/10'
-                                : enteredOtp[i]
-                                  ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/10'
-                                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
-                              } text-gray-900 dark:text-white`}
-                            autoFocus={i === 0}
-                          />
-                        ))}
-                      </div>
-                      {otpError && (
-                        <p className="text-sm text-rose-500 text-center">⚠ {otpError}</p>
-                      )}
-                    </div>
-
-                    {/* Timer & Resend */}
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      {otpTimer > 0 ? (
-                        <p className="text-gray-500 dark:text-gray-400">
-                          Resend OTP in <span className="font-bold text-indigo-600 dark:text-indigo-400">{otpTimer}s</span>
-                        </p>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleResendOtp}
-                          disabled={otpSending}
-                          className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-50"
-                        >
-                          <RotateCcw size={14} />
-                          Resend OTP
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-3">
-                      <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ShieldCheck}>
-                        Verify & Create Account
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => { setOtpSent(false); setEnteredOtp(''); setOtpError(''); }}
-                        className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                      >
-                        ← Change verification method
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </motion.div>
             )}
           </AnimatePresence>
 

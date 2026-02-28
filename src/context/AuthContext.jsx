@@ -18,20 +18,25 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, [token]);
 
-  const login = async (studentId, password) => {
+  // Login supports both register number and username
+  const login = async (identifier, password) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (studentId && password) {
+        if (identifier && password) {
           const mockToken = 'jwt_mock_' + Date.now();
-          const userData = {
-            ...MOCK_USER,
-            studentId: studentId.toUpperCase(),
-          };
-          localStorage.setItem('unimart_token', mockToken);
-          localStorage.setItem('unimart_user', JSON.stringify(userData));
-          setToken(mockToken);
-          setUser(userData);
-          resolve(userData);
+          // Check if identifier matches register number or username
+          const isRegisterNumber = identifier.toUpperCase() === MOCK_USER.studentId.toUpperCase();
+          const isUsername = identifier === MOCK_USER.username;
+          if (isRegisterNumber || isUsername) {
+            const userData = { ...MOCK_USER };
+            localStorage.setItem('unimart_token', mockToken);
+            localStorage.setItem('unimart_user', JSON.stringify(userData));
+            setToken(mockToken);
+            setUser(userData);
+            resolve(userData);
+          } else {
+            reject(new Error('Invalid credentials'));
+          }
         } else {
           reject(new Error('Invalid credentials'));
         }
@@ -46,16 +51,18 @@ export function AuthProvider({ children }) {
         const userData = {
           id: 'stu_' + Date.now(),
           studentId: data.studentId.toUpperCase(),
+          name: data.name || '',
           username: data.username,
           email: data.email || '',
           phone: data.phone || '',
           university: data.university,
           college: data.college,
           department: data.department,
-          campus: data.college, // Mapping college to campus for backward compatibility
+          campus: data.college,
           avatar: null,
           verified: true,
-          createdAt: new Date().toISOString(),
+          usernameChangeCount: 0,
+          createdAt: '2026-02-28',
         };
         localStorage.setItem('unimart_token', mockToken);
         localStorage.setItem('unimart_user', JSON.stringify(userData));
@@ -74,7 +81,11 @@ export function AuthProvider({ children }) {
   };
 
   const updateProfile = (updates) => {
-    const updatedUser = { ...user, ...updates };
+    let changeCount = user.usernameChangeCount || 0;
+    if (updates.username && updates.username !== user.username) {
+      changeCount += 1;
+    }
+    const updatedUser = { ...user, ...updates, usernameChangeCount: changeCount };
     localStorage.setItem('unimart_user', JSON.stringify(updatedUser));
     setUser(updatedUser);
   };

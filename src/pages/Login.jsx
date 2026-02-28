@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, Lock, ArrowRight } from 'lucide-react';
+import { GraduationCap, Lock, ArrowRight, User } from 'lucide-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
@@ -11,13 +11,13 @@ export default function Login() {
   const { login } = useAuth();
   const { error: showError } = useNotifications();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ studentId: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const errs = {};
-    if (!formData.studentId.trim()) errs.studentId = 'Student ID is required';
+    if (!formData.identifier.trim()) errs.identifier = 'Register Number or Username is required';
     if (!formData.password) errs.password = 'Password is required';
     return errs;
   };
@@ -31,10 +31,10 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await login(formData.studentId, formData.password);
+      await login(formData.identifier, formData.password);
       navigate('/');
     } catch (err) {
-      showError('Invalid Student ID or password');
+      showError('Invalid Register Number / Username or password');
     } finally {
       setLoading(false);
     }
@@ -59,23 +59,23 @@ export default function Login() {
             </Link>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Sign in with your Student ID to continue
+              Sign in with your Register Number or Username
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Student ID"
-              name="studentId"
-              placeholder="e.g. STU2024001"
-              value={formData.studentId}
+              label="Register Number or Username"
+              name="identifier"
+              placeholder="e.g. 20124UBCA081 or your_username"
+              value={formData.identifier}
               onChange={(e) => {
-                setFormData({ ...formData, studentId: e.target.value });
-                setErrors({ ...errors, studentId: '' });
+                setFormData({ ...formData, identifier: e.target.value });
+                setErrors({ ...errors, identifier: '' });
               }}
-              error={errors.studentId}
-              icon={GraduationCap}
+              error={errors.identifier}
+              icon={User}
               required
             />
             <Input
