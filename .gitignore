@@ -24,3 +24,14 @@ npm-debug.log*
 
 # Cache
 .cache/
+
+# Temp / debug files
+deploy_log.txt
+dist_time.txt
+git_log.txt
+git_log_utf8.txt
+git_status.txt
+git_status_utf8.txt
+
+# Local scripts
+*.bat
