@@ -2,28 +2,23 @@ import api from './api';
 
 const orderService = {
   create: async (orderData) => {
-    // In production: return api.post('/orders', orderData);
-    return { data: { id: Date.now(), ...orderData } };
+    return api.post('/orders', orderData);
   },
 
   getByBuyer: async () => {
-    // In production: return api.get('/orders/buyer');
-    return { data: [] };
+    return api.get('/orders/buyer');
   },
 
   getBySeller: async () => {
-    // In production: return api.get('/orders/seller');
-    return { data: [] };
+    return api.get('/orders/seller');
   },
 
   updateStatus: async (id, status) => {
-    // In production: return api.put(`/orders/${id}/status`, { status });
-    return { data: { id, status } };
+    return api.put(`/orders/${id}/status`, { status });
   },
 
   getById: async (id) => {
-    // In production: return api.get(`/orders/${id}`);
-    return { data: null };
+    return api.get(`/orders/${id}`);
   },
 };
 

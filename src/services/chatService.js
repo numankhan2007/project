@@ -2,13 +2,11 @@ import api from './api';
 
 const chatService = {
   getMessages: async (orderId) => {
-    // In production: return api.get(`/chat/${orderId}`);
-    return { data: [] };
+    return api.get(`/chat/${orderId}`);
   },
 
   sendMessage: async (orderId, message) => {
-    // In production: return api.post(`/chat/${orderId}`, { message });
-    return { data: { id: Date.now(), orderId, ...message } };
+    return api.post(`/chat/${orderId}`, { message });
   },
 };
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, MessageCircle, KeyRound, Filter } from 'lucide-react';
+import { Package, MessageCircle, KeyRound, Filter, CheckCircle, XCircle, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
@@ -15,7 +15,7 @@ export default function Orders() {
   const { user } = useAuth();
   const { orders } = useOrders();
   const [statusFilter, setStatusFilter] = useState('all');
-  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'buyer' });
+  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'seller' });
 
   const userOrders = orders.filter(
     (o) => o.buyer.username === user?.username || o.seller.username === user?.username
@@ -121,25 +121,33 @@ export default function Orders() {
                             <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
                           </Link>
                         )}
-                        {isBuyer && (order.status === ORDER_STATUS.PENDING || order.status === ORDER_STATUS.ACCEPTED) && (
+                        {/* Seller: Initiate Delivery (generates OTP & emails it to buyer) */}
+                        {!isBuyer && order.status === ORDER_STATUS.ACCEPTED && (
                           <Button
                             variant="primary"
                             size="sm"
-                            icon={KeyRound}
-                            onClick={() => setOtpModal({ open: true, order, mode: 'buyer' })}
+                            icon={Send}
+                            onClick={() => setOtpModal({ open: true, order, mode: 'generate' })}
                           >
-                            Generate OTP
+                            Initiate Delivery
                           </Button>
                         )}
+                        {/* Seller: Enter OTP received from buyer at delivery */}
                         {!isBuyer && order.status === ORDER_STATUS.OTP_GENERATED && (
                           <Button
                             variant="primary"
                             size="sm"
                             icon={KeyRound}
-                            onClick={() => setOtpModal({ open: true, order, mode: 'seller' })}
+                            onClick={() => setOtpModal({ open: true, order, mode: 'verify' })}
                           >
                             Enter OTP
                           </Button>
+                        )}
+                        {/* Buyer: Waiting indicator */}
+                        {isBuyer && order.status === ORDER_STATUS.OTP_GENERATED && (
+                          <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1 px-3 py-1.5">
+                            📧 OTP sent to your email
+                          </span>
                         )}
                         {order.status === ORDER_STATUS.DELIVERED && (
                           <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-3 py-1.5">
@@ -158,7 +166,7 @@ export default function Orders() {
 
       <OTPModal
         isOpen={otpModal.open}
-        onClose={() => setOtpModal({ open: false, order: null, mode: 'buyer' })}
+        onClose={() => setOtpModal({ open: false, order: null, mode: 'seller' })}
         order={otpModal.order}
         mode={otpModal.mode}
       />

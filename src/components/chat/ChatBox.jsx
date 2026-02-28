@@ -1,9 +1,10 @@
 import { useRef, useEffect } from 'react';
+import { Lock } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ChatHeader from './ChatHeader';
 
-export default function ChatBox({ messages, order, currentUser, otherUser, onSend }) {
+export default function ChatBox({ messages, order, currentUser, otherUser, onSend, readOnly = false }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -41,8 +42,17 @@ export default function ChatBox({ messages, order, currentUser, otherUser, onSen
         )}
       </div>
 
-      {/* Input */}
-      <ChatInput onSend={onSend} />
+      {/* Input or Read-Only Banner */}
+      {readOnly ? (
+        <div className="flex items-center justify-center gap-2 p-4 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <Lock size={14} className="text-gray-400" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            This chat is read-only. The order has been completed.
+          </p>
+        </div>
+      ) : (
+        <ChatInput onSend={onSend} />
+      )}
     </div>
   );
 }

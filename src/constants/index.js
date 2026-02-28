@@ -154,7 +154,11 @@ export const MOCK_PRODUCTS = [
     price: 450,
     category: 'textbooks',
     condition: 'Good',
-    images: ['https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400'],
+    images: [
+      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400',
+      'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400',
+      'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400'
+    ],
     seller: { username: 'math_nerd', campus: 'Anna University, Chennai' },
     status: 'available',
     createdAt: '2024-12-01',
@@ -166,7 +170,12 @@ export const MOCK_PRODUCTS = [
     price: 72000,
     category: 'electronics',
     condition: 'Like New',
-    images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400'],
+    images: [
+      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400',
+      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400',
+      'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400',
+      'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400'
+    ],
     seller: { username: 'tech_guru', campus: 'VIT, Vellore' },
     status: 'available',
     createdAt: '2024-11-28',
@@ -226,7 +235,11 @@ export const MOCK_PRODUCTS = [
     price: 18000,
     category: 'electronics',
     condition: 'Like New',
-    images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'],
+    images: [
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
+      'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400',
+      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400'
+    ],
     seller: { username: 'audio_fan', campus: 'Loyola College, Chennai' },
     status: 'sold',
     createdAt: '2024-11-25',
@@ -238,7 +251,12 @@ export const MOCK_PRODUCTS = [
     price: 800,
     category: 'other',
     condition: 'Good',
-    images: ['https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400'],
+    images: [
+      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400',
+      'https://images.unsplash.com/photo-1580584126903-c17d41830450?w=400',
+      'https://images.unsplash.com/photo-1614316345862-28c0cc1124e5?w=400',
+      'https://images.unsplash.com/photo-1510936111840-65e151ad71bb?w=400'
+    ],
     seller: { username: 'alex_doe', campus: 'Anna University, Chennai' },
     status: 'available',
     createdAt: '2024-12-09',

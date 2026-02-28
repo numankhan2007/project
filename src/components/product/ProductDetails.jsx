@@ -139,14 +139,6 @@ export default function ProductDetails({ product, onOrder, onBack }) {
             </div>
           </div>
 
-          {/* Privacy Notice */}
-          <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl">
-            <Shield size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 dark:text-amber-300">
-              <strong>Privacy Protected:</strong> Seller's email, phone, and full name are hidden. 
-              You can chat with the seller after placing an order.
-            </p>
-          </div>
 
           {/* Order Button */}
           <Button

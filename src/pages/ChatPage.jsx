@@ -1,9 +1,11 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Shield } from 'lucide-react';
 import ChatBox from '../components/chat/ChatBox';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
 import { useChat } from '../context/ChatContext';
+import { ORDER_STATUS } from '../constants';
 
 export default function ChatPage() {
   const { orderId } = useParams();
@@ -29,8 +31,13 @@ export default function ChatPage() {
   const otherUser = isBuyer ? order.seller.username : order.buyer.username;
   const messages = getMessagesByOrder(orderId);
 
+  // Chat is read-only when the order is completed or cancelled
+  const isReadOnly = order.status === ORDER_STATUS.DELIVERED || order.status === ORDER_STATUS.CANCELLED;
+
   const handleSend = (text) => {
-    sendMessage(orderId, user.username, text);
+    if (!isReadOnly) {
+      sendMessage(orderId, user.username, text);
+    }
   };
 
   return (
@@ -41,12 +48,21 @@ export default function ChatPage() {
         className="max-w-3xl mx-auto"
         style={{ height: 'calc(100vh - 120px)' }}
       >
+        {/* Privacy Banner */}
+        <div className="flex items-center gap-2 mb-3 px-2">
+          <Shield size={14} className="text-emerald-500" />
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+            <strong>Privacy Protected</strong> — Personal contact details (email/phone) are never shared. Coordinate through this chat only.
+          </p>
+        </div>
+
         <ChatBox
           messages={messages}
           order={order}
           currentUser={user?.username}
           otherUser={otherUser}
           onSend={handleSend}
+          readOnly={isReadOnly}
         />
       </motion.div>
     </div>
