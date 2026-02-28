@@ -35,3 +35,11 @@ git_status_utf8.txt
 
 # Local scripts
 *.bat
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.venv/
