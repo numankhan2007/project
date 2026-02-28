@@ -6,7 +6,8 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { STUDENT_REGISTRY, maskEmail } from '../constants';
+import { maskEmail } from '../constants';
+import api from '../services/api';
 
 // Username & password validation rules
 const validateCredential = (value, label) => {
@@ -72,9 +73,7 @@ export default function Register() {
     }
   }, [otpTimer]);
 
-  const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
-
-  // ── STEP 1: Verify register number ──
+  // ── STEP 1: Verify register number via backend API ──
   const handleVerifyRegNumber = async () => {
     const id = formData.studentId.trim().toUpperCase();
     if (!id) {
@@ -83,44 +82,64 @@ export default function Register() {
     }
 
     setVerifying(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      // Call backend to verify register number
+      const { data: record } = await api.get(`/auth/verify/${id}`);
 
-    const record = STUDENT_REGISTRY[id];
-    if (record) {
-      setRegistryRecord(record);
-      setMaskedEmail(maskEmail(record.email));
-      // Send OTP to the official email
-      const otp = generateOtp();
-      setGeneratedOtp(otp);
+      setRegistryRecord({
+        name: record.full_name,
+        email: record.official_email,
+        university: record.university,
+        college: record.college,
+        department: record.department,
+      });
+      setMaskedEmail(maskEmail(record.official_email));
+
+      // Send real OTP to the official email via backend
+      await api.post('/auth/send-registration-otp', {
+        email: record.official_email,
+        register_number: id,
+      });
+
       setOtpTimer(60);
       setEnteredOtp('');
       setOtpError('');
       setPhase('otp_email');
-      showSuccess(`📧 OTP sent to ${maskEmail(record.email)}. Your OTP is: ${otp}`);
-    } else {
-      showError('❌ Register Number not found in the database. Please check and try again.');
+      showSuccess(`📧 OTP sent to ${maskEmail(record.official_email)}. Check your inbox!`);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Register Number not found. Please check and try again.';
+      showError(`❌ ${msg}`);
     }
     setVerifying(false);
   };
 
-  // ── Verify OTP (primary path — official email) ──
-  const handleVerifyOfficialOtp = () => {
+  // ── Verify OTP (primary path — official email) via backend ──
+  const handleVerifyOfficialOtp = async () => {
     if (!enteredOtp.trim()) { setOtpError('Please enter the OTP'); return; }
-    if (enteredOtp !== generatedOtp) { setOtpError('Invalid OTP. Please try again.'); return; }
 
-    // Auto-fill all fields from registry
-    setFormData((prev) => ({
-      ...prev,
-      studentId: prev.studentId.toUpperCase(),
-      name: registryRecord.name,
-      email: registryRecord.email,
-      phone: '',
-      university: registryRecord.university,
-      college: registryRecord.college,
-      department: registryRecord.department,
-    }));
-    setPhase('fill_form');
-    showSuccess('✅ Email verified! Complete your profile below.');
+    try {
+      await api.post('/auth/verify-registration-otp', {
+        email: registryRecord.email,
+        otp: enteredOtp,
+      });
+
+      // Auto-fill all fields from registry
+      setFormData((prev) => ({
+        ...prev,
+        studentId: prev.studentId.toUpperCase(),
+        name: registryRecord.name,
+        email: registryRecord.email,
+        phone: '',
+        university: registryRecord.university,
+        college: registryRecord.college,
+        department: registryRecord.department,
+      }));
+      setPhase('fill_form');
+      showSuccess('✅ Email verified! Complete your profile below.');
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Invalid OTP. Please try again.';
+      setOtpError(msg);
+    }
   };
 
   // ── "I don't have access to mail" → manual email path ──
@@ -150,50 +169,70 @@ export default function Register() {
     }
 
     setOtpSending(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    const otp = generateOtp();
-    setGeneratedOtp(otp);
-    setOtpTimer(60);
-    setEnteredOtp('');
-    setOtpError('');
-    setPhase('manual_otp');
+    try {
+      await api.post('/auth/send-registration-otp', {
+        email: manualEmail,
+        register_number: formData.studentId.trim().toUpperCase(),
+      });
+      setOtpTimer(60);
+      setEnteredOtp('');
+      setOtpError('');
+      setPhase('manual_otp');
+      showSuccess(`📧 OTP sent to ${manualEmail}. Check your inbox!`);
+    } catch (err) {
+      showError('Failed to send OTP. Please try again.');
+    }
     setOtpSending(false);
-    showSuccess(`📧 OTP sent to ${manualEmail}. Your OTP is: ${otp}`);
   };
 
-  // ── Verify manual email OTP ──
-  const handleVerifyManualOtp = () => {
+  // ── Verify manual email OTP via backend ──
+  const handleVerifyManualOtp = async () => {
     if (!enteredOtp.trim()) { setOtpError('Please enter the OTP'); return; }
-    if (enteredOtp !== generatedOtp) { setOtpError('Invalid OTP. Please try again.'); return; }
 
-    // Auto-fill academic fields from registry (register number already verified)
-    setFormData((prev) => ({
-      ...prev,
-      studentId: prev.studentId.toUpperCase(),
-      name: registryRecord?.name || '',
-      email: manualEmail,
-      phone: manualPhone,
-      university: registryRecord?.university || '',
-      college: registryRecord?.college || '',
-      department: registryRecord?.department || '',
-    }));
-    setPhase('fill_form');
-    showSuccess('✅ Email verified! Academic details auto-filled. Complete your profile.');
+    try {
+      await api.post('/auth/verify-registration-otp', {
+        email: manualEmail,
+        otp: enteredOtp,
+      });
+
+      // Auto-fill academic fields from registry (register number already verified)
+      setFormData((prev) => ({
+        ...prev,
+        studentId: prev.studentId.toUpperCase(),
+        name: registryRecord?.name || '',
+        email: manualEmail,
+        phone: manualPhone,
+        university: registryRecord?.university || '',
+        college: registryRecord?.college || '',
+        department: registryRecord?.department || '',
+      }));
+      setPhase('fill_form');
+      showSuccess('✅ Email verified! Academic details auto-filled. Complete your profile.');
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Invalid OTP. Please try again.';
+      setOtpError(msg);
+    }
   };
 
-  // ── Resend OTP ──
+  // ── Resend OTP via backend ──
   const handleResendOtp = async () => {
     if (otpTimer > 0) return;
     setOtpSending(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const otp = generateOtp();
-    setGeneratedOtp(otp);
-    setOtpTimer(60);
-    setEnteredOtp('');
-    setOtpError('');
+    try {
+      const email = phase === 'otp_email' ? registryRecord?.email : manualEmail;
+      await api.post('/auth/send-registration-otp', {
+        email: email,
+        register_number: formData.studentId.trim().toUpperCase(),
+      });
+      setOtpTimer(60);
+      setEnteredOtp('');
+      setOtpError('');
+      const dest = phase === 'otp_email' ? maskedEmail : manualEmail;
+      showSuccess(`📧 New OTP sent to ${dest}. Check your inbox!`);
+    } catch (err) {
+      showError('Failed to resend OTP. Please try again.');
+    }
     setOtpSending(false);
-    const dest = phase === 'otp_email' ? maskedEmail : manualEmail;
-    showSuccess(`📧 New OTP: ${otp} (resent to ${dest})`);
   };
 
   // ── Final form validation ──
@@ -432,7 +471,7 @@ export default function Register() {
                   <Input
                     label="Register Number"
                     name="studentId"
-                    placeholder="e.g. 20124UBCA081"
+                    placeholder="Enter your Register Number"
                     value={formData.studentId}
                     onChange={(e) => updateField('studentId', e.target.value)}
                     error={errors.studentId}

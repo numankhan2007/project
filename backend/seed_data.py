@@ -27,12 +27,12 @@ def seed_official_records():
     # Sample official records for testing
     records = [
         OfficialRecord(
-            register_number="2127220501091",
+            register_number="20124UBCA081",
             full_name="NUMAN KHAN M",
             university="Anna University",
             college="Madras Institute of Technology",
             department="Information Technology",
-            official_email="numan.it@mitindia.edu"
+            official_email="m.numankhan2007@gmail.com"
         ),
         OfficialRecord(
             register_number="2127220501001",

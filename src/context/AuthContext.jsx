@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { MOCK_USER } from '../constants';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -18,59 +18,51 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, [token]);
 
-  // Login supports both register number and username
+  // Login via backend API
   const login = async (identifier, password) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (identifier && password) {
-          const mockToken = 'jwt_mock_' + Date.now();
-          // Check if identifier matches register number or username
-          const isRegisterNumber = identifier.toUpperCase() === MOCK_USER.studentId.toUpperCase();
-          const isUsername = identifier === MOCK_USER.username;
-          if (isRegisterNumber || isUsername) {
-            const userData = { ...MOCK_USER };
-            localStorage.setItem('unimart_token', mockToken);
-            localStorage.setItem('unimart_user', JSON.stringify(userData));
-            setToken(mockToken);
-            setUser(userData);
-            resolve(userData);
-          } else {
-            reject(new Error('Invalid credentials'));
-          }
-        } else {
-          reject(new Error('Invalid credentials'));
-        }
-      }, 800);
-    });
+    try {
+      const { data } = await api.post('/auth/login', {
+        studentId: identifier,
+        password: password,
+      });
+
+      const authToken = data.token;
+      const userData = data.user;
+
+      localStorage.setItem('unimart_token', authToken);
+      localStorage.setItem('unimart_user', JSON.stringify(userData));
+      setToken(authToken);
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Invalid credentials';
+      throw new Error(msg);
+    }
   };
 
+  // Register via backend API
   const register = async (data) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockToken = 'jwt_mock_' + Date.now();
-        const userData = {
-          id: 'stu_' + Date.now(),
-          studentId: data.studentId.toUpperCase(),
-          name: data.name || '',
-          username: data.username,
-          email: data.email || '',
-          phone: data.phone || '',
-          university: data.university,
-          college: data.college,
-          department: data.department,
-          campus: data.college,
-          avatar: null,
-          verified: true,
-          usernameChangeCount: 0,
-          createdAt: '2026-02-28',
-        };
-        localStorage.setItem('unimart_token', mockToken);
-        localStorage.setItem('unimart_user', JSON.stringify(userData));
-        setToken(mockToken);
-        setUser(userData);
-        resolve(userData);
-      }, 800);
-    });
+    try {
+      const { data: res } = await api.post('/auth/register', {
+        register_number: data.studentId,
+        username: data.username,
+        password: data.password,
+        personal_mail_id: data.email,
+        phone_number: data.phone || null,
+      });
+
+      const authToken = res.token;
+      const userData = res.user;
+
+      localStorage.setItem('unimart_token', authToken);
+      localStorage.setItem('unimart_user', JSON.stringify(userData));
+      setToken(authToken);
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Registration failed';
+      throw new Error(msg);
+    }
   };
 
   const logout = () => {
@@ -80,14 +72,20 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
-  const updateProfile = (updates) => {
-    let changeCount = user.usernameChangeCount || 0;
-    if (updates.username && updates.username !== user.username) {
-      changeCount += 1;
+  const updateProfile = async (updates) => {
+    try {
+      const { data } = await api.put('/auth/profile', updates);
+      const updatedUser = { ...user, ...data };
+      localStorage.setItem('unimart_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (err) {
+      // Fallback: update locally
+      const updatedUser = { ...user, ...updates };
+      localStorage.setItem('unimart_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
     }
-    const updatedUser = { ...user, ...updates, usernameChangeCount: changeCount };
-    localStorage.setItem('unimart_user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
   };
 
   return (

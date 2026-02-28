@@ -114,11 +114,11 @@ export const maskEmail = (email) => {
 };
 
 export const ORDER_STATUS = {
-  PENDING: 'pending',
-  ACCEPTED: 'accepted',
-  OTP_GENERATED: 'otp_generated',
-  DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
+  PENDING: 'PENDING',
+  ACCEPTED: 'CONFIRMED',
+  OTP_GENERATED: 'OTP_GENERATED',
+  DELIVERED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
 };
 
 export const ORDER_STATUS_LABELS = {

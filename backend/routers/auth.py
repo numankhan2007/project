@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import random
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from database import get_db
 from models import OfficialRecord, UserProfile
 from schemas import (
@@ -8,8 +10,22 @@ from schemas import (
 )
 from security import hash_password, verify_password, create_access_token
 from dependencies import get_current_user
+from email_service import send_otp_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# In-memory store for registration OTPs (in production, use Redis)
+registration_otps = {}
+
+
+class RegistrationOTPRequest(BaseModel):
+    email: str
+    register_number: str
+
+
+class RegistrationOTPVerify(BaseModel):
+    email: str
+    otp: str
 
 
 # ============================================================
@@ -23,7 +39,7 @@ def verify_register_number(register_number: str, db: Session = Depends(get_db)):
     Returns university, college, department info for auto-fill.
     """
     record = db.query(OfficialRecord).filter(
-        OfficialRecord.register_number == register_number
+        OfficialRecord.register_number == register_number.upper()
     ).first()
 
     if not record:
@@ -33,6 +49,67 @@ def verify_register_number(register_number: str, db: Session = Depends(get_db)):
         )
 
     return record
+
+
+# ============================================================
+# POST /auth/send-registration-otp — Send OTP to email
+# ============================================================
+
+@router.post("/send-registration-otp")
+async def send_registration_otp(
+    data: RegistrationOTPRequest,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Generate a 6-digit OTP and send it to the student's email for registration verification.
+    """
+    otp = str(random.randint(100000, 999999))
+    registration_otps[data.email] = otp
+
+    try:
+        background_tasks.add_task(
+            send_otp_email,
+            to_email=data.email,
+            otp_code=otp,
+            order_id=0,
+            buyer_name="Student",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send OTP email: {str(e)}"
+        )
+
+    return {"sent": True, "message": f"OTP sent to {data.email}"}
+
+
+# ============================================================
+# POST /auth/verify-registration-otp — Verify the email OTP
+# ============================================================
+
+@router.post("/verify-registration-otp")
+def verify_registration_otp(data: RegistrationOTPVerify):
+    """
+    Verify the OTP entered by the user during registration.
+    """
+    stored_otp = registration_otps.get(data.email)
+
+    if not stored_otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No OTP was generated for this email. Please request a new one."
+        )
+
+    if stored_otp != data.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP. Please try again."
+        )
+
+    # OTP verified — remove it
+    del registration_otps[data.email]
+
+    return {"verified": True, "message": "Email verified successfully!"}
 
 
 # ============================================================
