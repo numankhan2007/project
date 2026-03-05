@@ -231,7 +231,7 @@ export default function Dashboard() {
                   </span>
                 )}
                 {user?.phone && (
-                  <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50 shrink-0">
+                  <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50 shrink-0 whitespace-nowrap">
                     <Phone size={12} className="text-gray-400 shrink-0" />
                     +91 {user.phone}
                   </span>
