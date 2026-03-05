@@ -1,4 +1,5 @@
 import random
+import re
 import time
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -18,7 +19,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # In-memory store for registration OTPs with expiry (in production, use Redis)
 # Format: {email: {"otp": "123456", "expires": timestamp}}
 registration_otps = {}
+verified_emails = {}  # {email: timestamp} — tracks emails that passed OTP verification
 OTP_EXPIRY_SECONDS = 600  # 10 minutes
+VERIFIED_EMAIL_EXPIRY = 1800  # 30 minutes — how long a verified email stays valid
 
 
 class RegistrationOTPRequest(BaseModel):
@@ -118,8 +121,9 @@ def verify_registration_otp(data: RegistrationOTPVerify):
             detail="Invalid OTP. Please try again."
         )
 
-    # OTP verified -- remove it
+    # OTP verified -- remove OTP and mark email as verified
     del registration_otps[data.email]
+    verified_emails[data.email] = time.time() + VERIFIED_EMAIL_EXPIRY
 
     return {"verified": True, "message": "Email verified successfully!"}
 
@@ -137,6 +141,27 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
     3. Hash password, create UserProfile
     4. Return JWT token
     """
+    # Step 0: Validate phone number format (if provided)
+    if data.phone_number:
+        if not re.match(r'^[6-9]\d{9}$', data.phone_number.strip()):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid phone number. Must be a 10-digit Indian mobile number."
+            )
+
+    # Step 0.5: Verify email was OTP-verified
+    email = data.personal_mail_id.strip()
+    verified_ts = verified_emails.get(email)
+    if not verified_ts or time.time() > verified_ts:
+        # Also clean up expired entry
+        verified_emails.pop(email, None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email has not been verified. Please complete OTP verification first."
+        )
+    # Consume the verification (one-time use)
+    del verified_emails[email]
+
     # Step 1: Verify against Official DB
     reg_number = data.register_number.strip().upper()
     official = db.query(OfficialRecord).filter(
@@ -213,10 +238,16 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
     Authenticate user with register number (studentId) and password.
     Returns JWT token + user data (joined from both tables).
     """
-    # Find user
+    # Find user by register number OR username
+    identifier = data.studentId.strip()
     user = db.query(UserProfile).filter(
-        UserProfile.register_number == data.studentId
+        UserProfile.register_number == identifier.upper()
     ).first()
+    if not user:
+        # Fallback: try matching by username (case-sensitive)
+        user = db.query(UserProfile).filter(
+            UserProfile.username == identifier
+        ).first()
 
     if not user:
         raise HTTPException(

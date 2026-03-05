@@ -20,7 +20,7 @@ class UserSignup(BaseModel):
 
 
 class UserLogin(BaseModel):
-    studentId: str  # Maps to register_number (matches frontend field name)
+    studentId: str  # Accepts register_number OR username (matches frontend field name)
     password: str
 
 
