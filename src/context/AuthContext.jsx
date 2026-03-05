@@ -60,7 +60,16 @@ export function AuthProvider({ children }) {
       setUser(userData);
       return userData;
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Registration failed';
+      console.error('AuthContext register error:', err?.response?.data || err);
+      const detail = err?.response?.data?.detail;
+      let msg = 'Registration failed';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map(d => d.msg || d.message || JSON.stringify(d)).join(', ');
+      } else if (detail) {
+        msg = JSON.stringify(detail);
+      }
       throw new Error(msg);
     }
   };

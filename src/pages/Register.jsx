@@ -263,11 +263,19 @@ export default function Register() {
 
     setLoading(true);
     try {
+      console.log('Registration payload:', {
+        studentId: formData.studentId,
+        username: formData.username,
+        email: formData.email,
+        phone: formData.phone,
+      });
       await register(formData);
       showSuccess('🎉 Account created successfully!');
       navigate('/');
     } catch (err) {
-      showError(err?.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+      const detail = err?.response?.data?.detail || err?.message || 'Registration failed. Please try again.';
+      showError(typeof detail === 'string' ? detail : JSON.stringify(detail));
     } finally {
       setLoading(false);
     }
