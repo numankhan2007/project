@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from database import engine, Base
 from routers import auth, products, orders, chat, otp, payments
 from scheduler import start_scheduler, stop_scheduler
+from seed_data import seed_official_records
 
 
 # ============================================================
@@ -15,6 +16,14 @@ async def lifespan(app: FastAPI):
     # STARTUP: Create tables and start scheduler
     Base.metadata.create_all(bind=engine)
     start_scheduler()
+    
+    # Auto-seed official records if empty (workaround for lack of Render shell access)
+    try:
+        seed_official_records()
+        print("Database seeding check completed.")
+    except Exception as e:
+        print(f"Error during auto-seeding: {e}")
+        
     print("Unimart API is ready!")
     yield
     # SHUTDOWN: Stop scheduler
