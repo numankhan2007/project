@@ -88,3 +88,12 @@ def root():
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/seed-records")
+def manual_seed():
+    """Temporary endpoint to seed official records since Render free tier lacks shell access."""
+    try:
+        seed_official_records()
+        return {"status": "success", "message": "Official records seeded successfully."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
