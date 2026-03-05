@@ -138,8 +138,9 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
     4. Return JWT token
     """
     # Step 1: Verify against Official DB
+    reg_number = data.register_number.strip().upper()
     official = db.query(OfficialRecord).filter(
-        OfficialRecord.register_number == data.register_number
+        OfficialRecord.register_number == reg_number
     ).first()
 
     if not official:
@@ -150,7 +151,7 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
 
     # Step 2: Check if already registered
     existing = db.query(UserProfile).filter(
-        UserProfile.register_number == data.register_number
+        UserProfile.register_number == reg_number
     ).first()
 
     if existing:
@@ -172,7 +173,7 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
 
     # Step 4: Create user
     new_user = UserProfile(
-        register_number=data.register_number,
+        register_number=reg_number,
         username=data.username,
         hashed_password=hash_password(data.password),
         personal_mail_id=data.personal_mail_id,
