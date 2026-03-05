@@ -267,7 +267,7 @@ export default function Register() {
       showSuccess('🎉 Account created successfully!');
       navigate('/');
     } catch (err) {
-      showError('Registration failed. Please try again.');
+      showError(err?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
