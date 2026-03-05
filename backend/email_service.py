@@ -161,4 +161,13 @@ async def send_registration_otp_email(to_email: str, otp_code: str, student_id: 
         subtype=MessageType.html,
     )
 
-    await fast_mail.send_message(message)
+    try:
+        print(f"Attempting to send OTP email to {to_email} via {mail_config.MAIL_USERNAME}...")
+        await fast_mail.send_message(message)
+        print(f"Successfully sent OTP email to {to_email}!")
+    except Exception as e:
+        print(f"CRITICAL EMAIL ERROR: Failed to send OTP to {to_email}.")
+        print(f"Error details: {str(e)}")
+        # If it's an SMTPAuthenticationError, it usually means App Password is wrong or 2FA is off
+        import traceback
+        traceback.print_exc()
