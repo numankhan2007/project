@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import func
 from database import get_db
 from models import Order, Product, UserProfile, OrderStatus, ProductStatus
@@ -31,6 +31,15 @@ def create_order(
 
     if product.seller_register_number == current_user.register_number:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot buy your own product")
+
+    # Prevent duplicate active orders for the same product by same buyer
+    existing_order = db.query(Order).filter(
+        Order.product_id == data.product_id,
+        Order.buyer_register_number == current_user.register_number,
+        Order.order_status.in_([OrderStatus.PENDING, OrderStatus.CONFIRMED])
+    ).first()
+    if existing_order:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You already have an active order for this product")
 
     # Create the order
     new_order = Order(
@@ -184,9 +193,9 @@ def _format_orders(orders, db):
     """Format a list of orders with product and user details."""
     result = []
     for o in orders:
-        product = db.query(Product).filter(Product.id == o.product_id).first()
-        buyer = db.query(UserProfile).filter(UserProfile.register_number == o.buyer_register_number).first()
-        seller = db.query(UserProfile).filter(UserProfile.register_number == o.seller_register_number).first()
+        product = o.product if hasattr(o, 'product') and o.product else db.query(Product).filter(Product.id == o.product_id).first()
+        buyer = o.buyer if hasattr(o, 'buyer') and o.buyer else db.query(UserProfile).filter(UserProfile.register_number == o.buyer_register_number).first()
+        seller = o.seller if hasattr(o, 'seller') and o.seller else db.query(UserProfile).filter(UserProfile.register_number == o.seller_register_number).first()
         result.append({
             "id": o.id,
             "product_id": o.product_id,
@@ -197,7 +206,7 @@ def _format_orders(orders, db):
             "completed_at": str(o.completed_at) if o.completed_at else None,
             "product_title": product.title if product else None,
             "product_price": product.price if product else None,
-            "product_image": product.image_url if product else None,
+            "product_image": product.image_urls if product else None,
             "buyer_username": buyer.username if buyer else None,
             "seller_username": seller.username if seller else None,
         })

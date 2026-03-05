@@ -118,3 +118,47 @@ async def send_transaction_complete_email(to_email: str, order_id: int, product_
     )
 
     await fast_mail.send_message(message)
+
+
+async def send_registration_otp_email(to_email: str, otp_code: str, student_id: str):
+    """Send OTP code for student registration."""
+
+    html_body = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px; background: #f8f9fa; border-radius: 12px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="color: #1a1a2e; font-size: 28px; margin: 0;">🎓 Unimart</h1>
+            <p style="color: #6c757d; font-size: 14px;">Secure Student Marketplace</p>
+        </div>
+
+        <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <h2 style="color: #1a1a2e; font-size: 20px; margin-top: 0;">Registration Verification Code</h2>
+            <p style="color: #495057; line-height: 1.6;">
+                Welcome to Unimart!<br><br>
+                Please use the following OTP to verify your registration for <strong>{student_id}</strong>.
+            </p>
+
+            <div style="text-align: center; margin: 24px 0;">
+                <div style="display: inline-block; background: #e8f4fd; padding: 16px 32px; border-radius: 8px; border: 2px dashed #0d6efd;">
+                    <span style="font-size: 36px; font-weight: bold; letter-spacing: 12px; color: #0d6efd;">{otp_code}</span>
+                </div>
+            </div>
+
+            <p style="color: #dc3545; font-size: 13px; text-align: center;">
+                ⚠️ This code will expire in 10 minutes. Do NOT share it with anyone.
+            </p>
+        </div>
+
+        <p style="color: #adb5bd; font-size: 12px; text-align: center; margin-top: 16px;">
+            This is an automated email from Unimart. Do not reply.
+        </p>
+    </div>
+    """
+
+    message = MessageSchema(
+        subject="🔐 Unimart Registration Verification Code",
+        recipients=[to_email],
+        body=html_body,
+        subtype=MessageType.html,
+    )
+
+    await fast_mail.send_message(message)

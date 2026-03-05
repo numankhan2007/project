@@ -29,9 +29,9 @@ def seed_official_records():
         OfficialRecord(
             register_number="20124UBCA081",
             full_name="NUMAN KHAN M",
-            university="Anna University",
-            college="Madras Institute of Technology",
-            department="Information Technology",
+            university="ANNAMALAI UNIVERSITY",
+            college="ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM",
+            department="BCA",
             official_email="m.numankhan2007@gmail.com"
         ),
         OfficialRecord(
@@ -70,12 +70,13 @@ def seed_official_records():
 
     db.add_all(records)
     db.commit()
-    db.close()
 
-    print(f"✅ Successfully seeded {len(records)} official records!")
+    print(f"Successfully seeded {len(records)} official records!")
     print("\nTest register numbers you can use for signup:")
     for r in records:
-        print(f"  {r.register_number} — {r.full_name} ({r.department})")
+        print(f"  {r.register_number} -- {r.full_name} ({r.department})")
+
+    db.close()
 
 
 if __name__ == "__main__":

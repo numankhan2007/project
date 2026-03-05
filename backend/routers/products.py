@@ -1,13 +1,40 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from database import get_db
 from models import Product, UserProfile, OfficialRecord, ProductStatus
 from schemas import ProductCreate, ProductUpdate, ProductResponse
 from dependencies import get_current_user
 from typing import Optional
+import json
 
 router = APIRouter(prefix="/products", tags=["Products"])
+
+
+def _format_product(p, seller=None, official=None):
+    """Format a product dict with seller info."""
+    image_urls = []
+    if p.image_urls:
+        try:
+            image_urls = json.loads(p.image_urls)
+        except (json.JSONDecodeError, TypeError):
+            image_urls = [p.image_urls] if p.image_urls else []
+
+    return {
+        "id": p.id,
+        "seller_register_number": p.seller_register_number,
+        "title": p.title,
+        "description": p.description,
+        "price": p.price,
+        "category": p.category,
+        "image_urls": image_urls,
+        "image_url": image_urls[0] if image_urls else None,  # Backward compat
+        "product_status": p.product_status,
+        "created_at": str(p.created_at) if p.created_at else None,
+        "seller_username": seller.username if seller else None,
+        "seller_college": official.college if official else None,
+        "seller_department": official.department if official else None,
+    }
 
 
 # ============================================================
@@ -22,7 +49,9 @@ def get_all_products(
     db: Session = Depends(get_db)
 ):
     """List all available products with optional filters."""
-    query = db.query(Product).filter(Product.product_status == ProductStatus.AVAILABLE)
+    query = db.query(Product).options(
+        joinedload(Product.seller).joinedload(UserProfile.official_record)
+    ).filter(Product.product_status == ProductStatus.AVAILABLE)
 
     if category:
         query = query.filter(Product.category == category)
@@ -33,26 +62,10 @@ def get_all_products(
 
     products = query.order_by(Product.created_at.desc()).all()
 
-    result = []
-    for p in products:
-        seller = db.query(UserProfile).filter(UserProfile.register_number == p.seller_register_number).first()
-        official = db.query(OfficialRecord).filter(OfficialRecord.register_number == p.seller_register_number).first()
-        result.append({
-            "id": p.id,
-            "seller_register_number": p.seller_register_number,
-            "title": p.title,
-            "description": p.description,
-            "price": p.price,
-            "category": p.category,
-            "image_url": p.image_url,
-            "product_status": p.product_status,
-            "created_at": str(p.created_at) if p.created_at else None,
-            "seller_username": seller.username if seller else None,
-            "seller_college": official.college if official else None,
-            "seller_department": official.department if official else None,
-        })
-
-    return result
+    return [
+        _format_product(p, p.seller, p.seller.official_record if p.seller else None)
+        for p in products
+    ]
 
 
 # ============================================================
@@ -62,30 +75,23 @@ def get_all_products(
 @router.get("/search")
 def search_products(q: str = Query(...), db: Session = Depends(get_db)):
     """Search products by title or description."""
-    products = db.query(Product).filter(
+    # Sanitize search wildcards
+    safe_q = q.replace("%", "\\%").replace("_", "\\_")
+
+    products = db.query(Product).options(
+        joinedload(Product.seller)
+    ).filter(
         Product.product_status == ProductStatus.AVAILABLE,
         or_(
-            Product.title.ilike(f"%{q}%"),
-            Product.description.ilike(f"%{q}%")
+            Product.title.ilike(f"%{safe_q}%"),
+            Product.description.ilike(f"%{safe_q}%")
         )
     ).order_by(Product.created_at.desc()).all()
 
-    result = []
-    for p in products:
-        seller = db.query(UserProfile).filter(UserProfile.register_number == p.seller_register_number).first()
-        result.append({
-            "id": p.id,
-            "title": p.title,
-            "description": p.description,
-            "price": p.price,
-            "category": p.category,
-            "image_url": p.image_url,
-            "product_status": p.product_status,
-            "created_at": str(p.created_at) if p.created_at else None,
-            "seller_username": seller.username if seller else None,
-        })
-
-    return result
+    return [
+        _format_product(p, p.seller, None)
+        for p in products
+    ]
 
 
 # ============================================================
@@ -95,28 +101,18 @@ def search_products(q: str = Query(...), db: Session = Depends(get_db)):
 @router.get("/{product_id}")
 def get_product(product_id: int, db: Session = Depends(get_db)):
     """Get a single product by ID."""
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).options(
+        joinedload(Product.seller).joinedload(UserProfile.official_record)
+    ).filter(Product.id == product_id).first()
 
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
-    seller = db.query(UserProfile).filter(UserProfile.register_number == product.seller_register_number).first()
-    official = db.query(OfficialRecord).filter(OfficialRecord.register_number == product.seller_register_number).first()
-
-    return {
-        "id": product.id,
-        "seller_register_number": product.seller_register_number,
-        "title": product.title,
-        "description": product.description,
-        "price": product.price,
-        "category": product.category,
-        "image_url": product.image_url,
-        "product_status": product.product_status,
-        "created_at": str(product.created_at) if product.created_at else None,
-        "seller_username": seller.username if seller else None,
-        "seller_college": official.college if official else None,
-        "seller_department": official.department if official else None,
-    }
+    return _format_product(
+        product,
+        product.seller,
+        product.seller.official_record if product.seller else None
+    )
 
 
 # ============================================================
@@ -130,30 +126,27 @@ def create_product(
     db: Session = Depends(get_db)
 ):
     """Create a new product listing. Only authenticated users can sell."""
+    # Serialize image URLs to JSON
+    image_urls_json = None
+    if data.image_urls:
+        image_urls_json = json.dumps(data.image_urls)
+    elif data.image_url:
+        image_urls_json = json.dumps([data.image_url])
+
     new_product = Product(
         seller_register_number=current_user.register_number,
         title=data.title,
         description=data.description,
         price=data.price,
         category=data.category,
-        image_url=data.image_url,
+        image_urls=image_urls_json,
         product_status=ProductStatus.AVAILABLE,
     )
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
 
-    return {
-        "id": new_product.id,
-        "seller_register_number": new_product.seller_register_number,
-        "title": new_product.title,
-        "description": new_product.description,
-        "price": new_product.price,
-        "category": new_product.category,
-        "image_url": new_product.image_url,
-        "product_status": new_product.product_status,
-        "created_at": str(new_product.created_at) if new_product.created_at else None,
-    }
+    return _format_product(new_product)
 
 
 # ============================================================
@@ -184,21 +177,15 @@ def update_product(
         product.price = data.price
     if data.category is not None:
         product.category = data.category
-    if data.image_url is not None:
-        product.image_url = data.image_url
+    if data.image_urls is not None:
+        product.image_urls = json.dumps(data.image_urls)
+    elif data.image_url is not None:
+        product.image_urls = json.dumps([data.image_url])
 
     db.commit()
     db.refresh(product)
 
-    return {
-        "id": product.id,
-        "title": product.title,
-        "description": product.description,
-        "price": product.price,
-        "category": product.category,
-        "image_url": product.image_url,
-        "product_status": product.product_status,
-    }
+    return _format_product(product)
 
 
 # ============================================================

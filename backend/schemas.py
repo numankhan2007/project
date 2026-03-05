@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -94,7 +94,8 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     price: float
     category: Optional[str] = None
-    image_url: Optional[str] = None
+    image_url: Optional[str] = None  # Single image (backward compat)
+    image_urls: Optional[List[str]] = None  # Multiple images
 
 
 class ProductUpdate(BaseModel):
@@ -103,6 +104,7 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     category: Optional[str] = None
     image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = None
 
 
 class ProductResponse(BaseModel):
@@ -113,6 +115,7 @@ class ProductResponse(BaseModel):
     price: float
     category: Optional[str] = None
     image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = None
     product_status: str
     created_at: Optional[datetime] = None
     seller_username: Optional[str] = None

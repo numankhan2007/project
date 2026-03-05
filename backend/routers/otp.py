@@ -36,7 +36,7 @@ def generate_otp(
             detail="Order must be CONFIRMED before initiating delivery"
         )
 
-    otp = str(random.randint(1000, 9999))
+    otp = str(random.randint(100000, 999999))
     order.otp_code = otp
     db.commit()
 

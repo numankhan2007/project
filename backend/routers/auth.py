@@ -1,4 +1,5 @@
 import random
+import time
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -10,12 +11,14 @@ from schemas import (
 )
 from security import hash_password, verify_password, create_access_token
 from dependencies import get_current_user
-from email_service import send_otp_email
+from email_service import send_otp_email, send_registration_otp_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# In-memory store for registration OTPs (in production, use Redis)
+# In-memory store for registration OTPs with expiry (in production, use Redis)
+# Format: {email: {"otp": "123456", "expires": timestamp}}
 registration_otps = {}
+OTP_EXPIRY_SECONDS = 600  # 10 minutes
 
 
 class RegistrationOTPRequest(BaseModel):
@@ -64,15 +67,17 @@ async def send_registration_otp(
     Generate a 6-digit OTP and send it to the student's email for registration verification.
     """
     otp = str(random.randint(100000, 999999))
-    registration_otps[data.email] = otp
+    registration_otps[data.email] = {
+        "otp": otp,
+        "expires": time.time() + OTP_EXPIRY_SECONDS,
+    }
 
     try:
         background_tasks.add_task(
-            send_otp_email,
+            send_registration_otp_email,
             to_email=data.email,
             otp_code=otp,
-            order_id=0,
-            buyer_name="Student",
+            student_id=data.register_number,
         )
     except Exception as e:
         raise HTTPException(
@@ -92,21 +97,28 @@ def verify_registration_otp(data: RegistrationOTPVerify):
     """
     Verify the OTP entered by the user during registration.
     """
-    stored_otp = registration_otps.get(data.email)
+    stored = registration_otps.get(data.email)
 
-    if not stored_otp:
+    if not stored:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No OTP was generated for this email. Please request a new one."
         )
 
-    if stored_otp != data.otp:
+    if time.time() > stored["expires"]:
+        del registration_otps[data.email]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired. Please request a new one."
+        )
+
+    if stored["otp"] != data.otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OTP. Please try again."
         )
 
-    # OTP verified — remove it
+    # OTP verified -- remove it
     del registration_otps[data.email]
 
     return {"verified": True, "message": "Email verified successfully!"}

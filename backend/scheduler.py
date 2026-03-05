@@ -17,7 +17,8 @@ from models import Product, ChatMessage, Order, ProductStatus, OrderStatus
 
 def cleanup_sold_out_products():
     """
-    Delete products that have been in SOLD_OUT status for more than 7 days.
+    Soft-delete products that have been in SOLD_OUT status for more than 7 days.
+    Marks them as DELETED instead of removing rows (preserves FK integrity with orders).
     Runs every 24 hours.
     """
     db: Session = SessionLocal()
@@ -32,17 +33,17 @@ def cleanup_sold_out_products():
 
         count = len(sold_products)
         for product in sold_products:
-            db.delete(product)
+            product.product_status = ProductStatus.DELETED
 
         db.commit()
 
         if count > 0:
-            print(f"[SCHEDULER] ✅ Deleted {count} sold-out products older than 7 days.")
+            print(f"[SCHEDULER] Deleted {count} sold-out products older than 7 days (soft-delete).")
         else:
             print(f"[SCHEDULER] No sold-out products to clean up.")
 
     except Exception as e:
-        print(f"[SCHEDULER] ❌ Error in cleanup job: {e}")
+        print(f"[SCHEDULER] Error in cleanup job: {e}")
         db.rollback()
     finally:
         db.close()
@@ -77,12 +78,12 @@ def cleanup_expired_chats():
         db.commit()
 
         if total_deleted > 0:
-            print(f"[SCHEDULER] ✅ Deleted {total_deleted} expired chat messages from {len(expired_orders)} completed orders.")
+            print(f"[SCHEDULER] Deleted {total_deleted} expired chat messages from {len(expired_orders)} completed orders.")
         else:
             print(f"[SCHEDULER] No expired chat messages to clean up.")
 
     except Exception as e:
-        print(f"[SCHEDULER] ❌ Error in chat cleanup job: {e}")
+        print(f"[SCHEDULER] Error in chat cleanup job: {e}")
         db.rollback()
     finally:
         db.close()
@@ -117,7 +118,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    print("[SCHEDULER] 🕐 Background scheduler started.")
+    print("[SCHEDULER] Background scheduler started.")
     print("[SCHEDULER]   - Product cleanup: every 24 hours")
     print("[SCHEDULER]   - Chat cleanup: every 1 hour")
 

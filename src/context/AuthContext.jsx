@@ -80,11 +80,8 @@ export function AuthProvider({ children }) {
       setUser(updatedUser);
       return updatedUser;
     } catch (err) {
-      // Fallback: update locally
-      const updatedUser = { ...user, ...updates };
-      localStorage.setItem('unimart_user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      return updatedUser;
+      const msg = err?.response?.data?.detail || 'Failed to update profile';
+      throw new Error(msg);
     }
   };
 

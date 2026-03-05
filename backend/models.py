@@ -13,6 +13,7 @@ class ProductStatus(str, enum.Enum):
     AVAILABLE = "AVAILABLE"
     RESERVED = "RESERVED"
     SOLD_OUT = "SOLD_OUT"
+    DELETED = "DELETED"  # Soft-delete status
 
 
 class OrderStatus(str, enum.Enum):
@@ -76,7 +77,7 @@ class Product(Base):
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
     category = Column(String, nullable=True)
-    image_url = Column(String, nullable=True)
+    image_urls = Column(Text, nullable=True)  # JSON array of image URLs (supports multiple images)
     product_status = Column(String, default=ProductStatus.AVAILABLE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     sold_at = Column(DateTime(timezone=True), nullable=True)

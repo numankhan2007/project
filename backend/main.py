@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     # STARTUP: Create tables and start scheduler
     Base.metadata.create_all(bind=engine)
     start_scheduler()
-    print("🚀 Unimart API is ready!")
+    print("Unimart API is ready!")
     yield
     # SHUTDOWN: Stop scheduler
     stop_scheduler()
