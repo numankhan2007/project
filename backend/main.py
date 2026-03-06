@@ -13,8 +13,7 @@ from seed_data import seed_official_records
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP: Create tables and start scheduler
-    Base.metadata.create_all(bind=engine)
+    # STARTUP: Start scheduler (Database is managed via Alembic now)
     start_scheduler()
     
     # Auto-seed official records if empty (workaround for lack of Render shell access)

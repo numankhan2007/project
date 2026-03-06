@@ -13,13 +13,10 @@ from schemas import (
 from security import hash_password, verify_password, create_access_token
 from dependencies import get_current_user
 from email_service import send_otp_email, send_registration_otp_email
+from redis_client import redis_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# In-memory store for registration OTPs with expiry (in production, use Redis)
-# Format: {email: {"otp": "123456", "expires": timestamp}}
-registration_otps = {}
-verified_emails = {}  # {email: timestamp} — tracks emails that passed OTP verification
 OTP_EXPIRY_SECONDS = 600  # 10 minutes
 VERIFIED_EMAIL_EXPIRY = 1800  # 30 minutes — how long a verified email stays valid
 
@@ -70,10 +67,14 @@ async def send_registration_otp(
     Generate a 6-digit OTP and send it to the student's email for registration verification.
     """
     otp = str(random.randint(100000, 999999))
-    registration_otps[data.email] = {
-        "otp": otp,
-        "expires": time.time() + OTP_EXPIRY_SECONDS,
-    }
+    
+    if redis_client:
+        # Store OTP in Redis with an exact expiration timer
+        redis_client.setex(f"reg_otp:{data.email}", OTP_EXPIRY_SECONDS, otp)
+    else:
+        raise HTTPException(
+            status_code=500, detail="Redis connection failed. OTP cannot be stored."
+        )
 
     try:
         background_tasks.add_task(
@@ -100,30 +101,26 @@ def verify_registration_otp(data: RegistrationOTPVerify):
     """
     Verify the OTP entered by the user during registration.
     """
-    stored = registration_otps.get(data.email)
+    if not redis_client:
+         raise HTTPException(status_code=500, detail="Redis is not connected.")
 
-    if not stored:
+    stored_otp = redis_client.get(f"reg_otp:{data.email}")
+
+    if not stored_otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No OTP was generated for this email. Please request a new one."
+            detail="OTP is invalid or has expired. Please request a new one."
         )
 
-    if time.time() > stored["expires"]:
-        del registration_otps[data.email]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OTP has expired. Please request a new one."
-        )
-
-    if stored["otp"] != data.otp:
+    if stored_otp != data.otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OTP. Please try again."
         )
 
-    # OTP verified -- remove OTP and mark email as verified
-    del registration_otps[data.email]
-    verified_emails[data.email] = time.time() + VERIFIED_EMAIL_EXPIRY
+    # OTP verified -- remove OTP from Redis and mark email as verified temporarily
+    redis_client.delete(f"reg_otp:{data.email}")
+    redis_client.setex(f"reg_verified:{data.email}", VERIFIED_EMAIL_EXPIRY, "true")
 
     return {"verified": True, "message": "Email verified successfully!"}
 
@@ -151,16 +148,19 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
 
     # Step 0.5: Verify email was OTP-verified
     email = data.personal_mail_id.strip()
-    verified_ts = verified_emails.get(email)
-    if not verified_ts or time.time() > verified_ts:
-        # Also clean up expired entry
-        verified_emails.pop(email, None)
+    
+    if not redis_client:
+         raise HTTPException(status_code=500, detail="Redis is not connected.")
+
+    is_verified = redis_client.get(f"reg_verified:{email}")
+    
+    if not is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email has not been verified. Please complete OTP verification first."
         )
     # Consume the verification (one-time use)
-    del verified_emails[email]
+    redis_client.delete(f"reg_verified:{email}")
 
     # Step 1: Verify against Official DB
     reg_number = data.register_number.strip().upper()
