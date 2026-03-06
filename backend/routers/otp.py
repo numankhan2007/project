@@ -1,4 +1,5 @@
 import random
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -36,7 +37,7 @@ def generate_otp(
             detail="Order must be CONFIRMED before initiating delivery"
         )
 
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     order.otp_code = otp
     db.commit()
 
@@ -140,10 +141,9 @@ async def send_otp_via_email(
     ).first()
     buyer_name = buyer.username if buyer else "Student"
 
-    # Send email in background (non-blocking)
+    # Send email synchronously to guarantee delivery
     try:
-        background_tasks.add_task(
-            send_otp_email,
+        await send_otp_email(
             to_email=data.email,
             otp_code=order.otp_code,
             order_id=order.id,

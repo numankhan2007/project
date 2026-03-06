@@ -1,5 +1,6 @@
 import random
 import re
+import secrets
 import time
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -65,7 +66,7 @@ async def send_registration_otp(
     """
     Generate a 6-digit OTP and send it to the student's email for registration verification.
     """
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     
     if redis_client:
         # Store OTP in Redis with an exact expiration timer

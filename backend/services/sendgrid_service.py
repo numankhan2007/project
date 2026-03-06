@@ -13,13 +13,8 @@ SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "noreply@unimart.com")
 
 def get_sendgrid_client():
     if not SENDGRID_API_KEY:
-        print("WARNING: SENDGRID_API_KEY is not set in environment variables.")
-        return None
-    try:
-        return SendGridAPIClient(SENDGRID_API_KEY)
-    except Exception as e:
-        print(f"Error initializing SendGrid client: {str(e)}")
-        return None
+        raise ValueError("SENDGRID_API_KEY is not set in environment variables.")
+    return SendGridAPIClient(SENDGRID_API_KEY)
 
 
 async def send_registration_otp_email(to_email: str, otp_code: str, student_id: str):
@@ -66,16 +61,8 @@ async def send_registration_otp_email(to_email: str, otp_code: str, student_id: 
     try:
         print(f"Attempting to send OTP email to {to_email} via SendGrid...")
         sg = get_sendgrid_client()
-        if sg:
-            response = sg.send(message)
-            print(f"Successfully sent OTP email to {to_email}! Status Code: {response.status_code}")
-        else:
-             print("SendGrid client not initialized. Cannot send email.")
-             # Fallback for testing when SendGrid isn't configured yet
-             print("\n" + "="*50)
-             print('🚨 SENDGRID MISSING CONFIGURATION 🚨')
-             print(f"BYPASS CODE FOR TESTING -> OTP: {otp_code}")
-             print("="*50 + "\n")
+        response = sg.send(message)
+        print(f"Successfully sent OTP email to {to_email}! Status Code: {response.status_code}")
     except Exception as e:
         print(f"CRITICAL EMAIL ERROR: Failed to send OTP to {to_email} via SendGrid.")
         print(f"Error details: {str(e)}")
@@ -128,11 +115,8 @@ async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name
     try:
         print(f"Attempting to send Delivery OTP to {to_email} via SendGrid...")
         sg = get_sendgrid_client()
-        if sg:
-             response = sg.send(message)
-             print(f"Successfully sent Delivery OTP. Status Code: {response.status_code}")
-        else:
-             print("SendGrid client not initialized. Cannot send Delivery OTP.")
+        response = sg.send(message)
+        print(f"Successfully sent Delivery OTP. Status Code: {response.status_code}")
     except Exception as e:
         print(f"Failed to send Delivery OTP to {to_email} via SendGrid.")
         print(f"Error details: {str(e)}")
@@ -182,11 +166,8 @@ async def send_transaction_complete_email(to_email: str, order_id: int, product_
     try:
         print(f"Attempting to send Transaction Complete email to {to_email} via SendGrid...")
         sg = get_sendgrid_client()
-        if sg:
-             response = sg.send(message)
-             print(f"Successfully sent Transaction Complete email. Status: {response.status_code}")
-        else:
-             print("SendGrid client not initialized. Cannot send Transaction Complete email.")
+        response = sg.send(message)
+        print(f"Successfully sent Transaction Complete email. Status: {response.status_code}")
     except Exception as e:
         print(f"Failed to send Transaction Complete email to {to_email} via SendGrid.")
         print(f"Error details: {str(e)}")
