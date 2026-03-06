@@ -29,7 +29,7 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/project">
+    <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <OrderProvider>
