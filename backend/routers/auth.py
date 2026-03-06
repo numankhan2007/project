@@ -61,7 +61,6 @@ def verify_register_number(register_number: str, db: Session = Depends(get_db)):
 @router.post("/send-registration-otp")
 async def send_registration_otp(
     data: RegistrationOTPRequest,
-    background_tasks: BackgroundTasks,
 ):
     """
     Generate a 6-digit OTP and send it to the student's email for registration verification.
@@ -77,16 +76,17 @@ async def send_registration_otp(
         )
 
     try:
-        background_tasks.add_task(
-            send_registration_otp_email,
+        await send_registration_otp_email(
             to_email=data.email,
             otp_code=otp,
             student_id=data.register_number,
         )
     except Exception as e:
+        if redis_client:
+            redis_client.delete(f"reg_otp:{data.email}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send OTP email: {str(e)}"
+            detail=f"Error sending OTP: Email service failure or invalid credentials."
         )
 
     return {"sent": True, "message": f"OTP sent to {data.email}"}
