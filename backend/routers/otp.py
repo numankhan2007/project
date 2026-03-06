@@ -6,7 +6,7 @@ from database import get_db
 from models import Order, Product, UserProfile, OrderStatus, ProductStatus
 from schemas import OTPGenerate, OTPVerify, OTPSendEmail
 from dependencies import get_current_user
-from email_service import send_otp_email, send_transaction_complete_email
+from services.sendgrid_service import send_otp_email, send_transaction_complete_email
 
 router = APIRouter(prefix="/otp", tags=["OTP Handshake"])
 

@@ -12,7 +12,7 @@ from schemas import (
 )
 from security import hash_password, verify_password, create_access_token
 from dependencies import get_current_user
-from email_service import send_otp_email, send_registration_otp_email
+from services.sendgrid_service import send_registration_otp_email
 from redis_client import redis_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -82,17 +82,9 @@ async def send_registration_otp(
             student_id=data.register_number,
         )
     except Exception as e:
-        # --- RAILWAY FREE TIER SMTP BYPASS ---
-        # Cloud providers block outbound ports 587/465 to prevent spam.
-        # We catch the timeout and print the OTP clearly in the logs
-        # so the developer can finish registration testing.
-        print("\n" + "="*50)
-        print("🚨 SMTP TIMEOUT (LIKELY BLOCKED BY RAILWAY) 🚨")
-        print(f"Email delivery to {data.email} failed.")
-        print(f"BYPASS CODE FOR TESTING -> OTP: {otp}")
-        print("="*50 + "\n")
-        # We do NOT delete the OTP or raise an HTTP error, 
-        # allowing the frontend to proceed to the OTP input screen.
+        raise HTTPException(
+            status_code=500, detail="Failed to send OTP email. Please try again later."
+        )
 
     return {"sent": True, "message": f"OTP sent to {data.email}"}
 
