@@ -34,7 +34,11 @@ export default function Login() {
       await login(formData.identifier, formData.password);
       navigate('/');
     } catch (err) {
-      showError('Invalid Register Number / Username or password');
+      if (!err.response) {
+        showError('❌ Server Error: Unable to connect to the backend.');
+      } else {
+        showError('Invalid Register Number / Username or password');
+      }
     } finally {
       setLoading(false);
     }

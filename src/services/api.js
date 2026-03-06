@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+
+if (!VITE_API_URL && import.meta.env.PROD) {
+  console.error("CRITICAL: VITE_API_URL is missing in production environment! Defaulting to localhost.");
+}
+
+let API_BASE_URL = VITE_API_URL || 'http://localhost:8000/api';
 if (API_BASE_URL && !API_BASE_URL.endsWith('/api')) {
   API_BASE_URL = API_BASE_URL.replace(/\/$/, '') + '/api';
 }

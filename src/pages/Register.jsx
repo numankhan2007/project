@@ -107,8 +107,12 @@ export default function Register() {
       setPhase('otp_email');
       showSuccess(`📧 OTP sent to ${maskEmail(record.official_email)}. Check your inbox!`);
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Register Number not found. Please check and try again.';
-      showError(`❌ ${msg}`);
+      if (!err.response) {
+        showError('❌ Server Error: Unable to connect to the backend. Please check your internet or API URL.');
+      } else {
+        const msg = err?.response?.data?.detail || 'Register Number not found. Please check and try again.';
+        showError(`❌ ${msg}`);
+      }
     }
     setVerifying(false);
   };
@@ -274,8 +278,12 @@ export default function Register() {
       navigate('/');
     } catch (err) {
       console.error('Registration error:', err);
-      const detail = err?.response?.data?.detail || err?.message || 'Registration failed. Please try again.';
-      showError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      if (!err.response) {
+        showError('❌ Server Error: Unable to connect to the backend.');
+      } else {
+        const detail = err?.response?.data?.detail || err?.message || 'Registration failed. Please try again.';
+        showError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      }
     } finally {
       setLoading(false);
     }
