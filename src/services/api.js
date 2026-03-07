@@ -3,7 +3,11 @@ import axios from 'axios';
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 if (!VITE_API_URL && import.meta.env.PROD) {
-  console.error("CRITICAL: VITE_API_URL is missing in production environment! Defaulting to localhost.");
+  console.error(
+    "CRITICAL: VITE_API_URL is missing in production environment! " +
+    "Set it in Vercel → Settings → Environment Variables. " +
+    "Defaulting to localhost (will fail in production)."
+  );
 }
 
 let API_BASE_URL = VITE_API_URL || 'http://localhost:8000/api';
@@ -13,7 +17,7 @@ if (API_BASE_URL && !API_BASE_URL.endsWith('/api')) {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 15000, // Increased from 10s — Railway cold starts can be slow
   headers: {
     'Content-Type': 'application/json',
   },
@@ -31,17 +35,45 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle auth errors
+// Response interceptor - handle auth errors and network errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Network error (no response from server)
+    if (!error.response) {
+      console.error('[API] Network error — backend unreachable:', error.message);
+      const networkError = new Error(
+        'Server Error: Unable to connect to the backend. Please check your internet connection or try again later.'
+      );
+      networkError.isNetworkError = true;
+      return Promise.reject(networkError);
+    }
+
+    // Auth error — clear tokens and redirect
+    if (error.response.status === 401) {
       localStorage.removeItem('unimart_token');
       localStorage.removeItem('unimart_user');
-      window.location.href = '/login';
+      // Only redirect if not already on auth pages
+      if (!['/login', '/register'].includes(window.location.pathname)) {
+        window.location.href = '/login';
+      }
     }
+
     return Promise.reject(error);
   }
 );
+
+/**
+ * Check if the backend is reachable. Returns true/false.
+ * Useful for showing connection status in the UI.
+ */
+export async function checkBackendHealth() {
+  try {
+    const res = await api.get('/health', { timeout: 5000 });
+    return res.data?.status === 'healthy';
+  } catch {
+    return false;
+  }
+}
 
 export default api;

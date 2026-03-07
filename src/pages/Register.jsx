@@ -706,20 +706,17 @@ export default function Register() {
                   </div>
                 ))}
 
-                {/* Phone (editable if not set) */}
-                {!formData.phone && (
-                  <Input
-                    label="Phone Number"
-                    name="phone"
-                    type="tel"
-                    placeholder="e.g. 9876543210"
-                    value={formData.phone}
-                    onChange={(e) => updateField('phone', e.target.value)}
-                    error={errors.phone}
-                    icon={Phone}
-                    required
-                  />
-                )}
+                {/* Phone Number */}
+                <Input
+                  label="Phone Number"
+                  name="phone"
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={formData.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  error={errors.phone}
+                  icon={Phone}
+                />
 
                 {/* Editable Fields */}
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">

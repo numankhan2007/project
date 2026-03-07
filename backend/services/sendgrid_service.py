@@ -6,15 +6,49 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# We need the Sender Email to be verified in SendGrid
-# and the API Key to authenticate requests.
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "noreply@unimart.com")
+
+# Validate configuration at import time
+if not SENDGRID_API_KEY:
+    print("WARNING: SENDGRID_API_KEY is not set. Email sending will fail.")
+
+if SENDGRID_FROM_EMAIL in ("your.verified@email.com", "noreply@unimart.com"):
+    print(f"WARNING: SENDGRID_FROM_EMAIL is '{SENDGRID_FROM_EMAIL}' — this may not be a verified sender in SendGrid.")
+
 
 def get_sendgrid_client():
     if not SENDGRID_API_KEY:
         raise ValueError("SENDGRID_API_KEY is not set in environment variables.")
     return SendGridAPIClient(SENDGRID_API_KEY)
+
+
+def _send_with_retry(message, max_retries=1):
+    """Send email with optional retry on transient failure."""
+    sg = get_sendgrid_client()
+    last_error = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            response = sg.send(message)
+            print(f"Email sent successfully! Status: {response.status_code}")
+            
+            if response.status_code >= 400:
+                print(f"SendGrid returned error status {response.status_code}")
+                print(f"Response body: {response.body}")
+                print(f"Response headers: {response.headers}")
+            
+            return response
+        except Exception as e:
+            last_error = e
+            print(f"Email send attempt {attempt + 1}/{max_retries + 1} failed: {str(e)}")
+            if attempt < max_retries:
+                print("Retrying...")
+    
+    # All retries exhausted
+    print(f"CRITICAL: All email send attempts failed.")
+    traceback.print_exc()
+    raise last_error
 
 
 async def send_registration_otp_email(to_email: str, otp_code: str, student_id: str):
@@ -58,16 +92,9 @@ async def send_registration_otp_email(to_email: str, otp_code: str, student_id: 
         html_content=html_body,
     )
 
-    try:
-        print(f"Attempting to send OTP email to {to_email} via SendGrid...")
-        sg = get_sendgrid_client()
-        response = sg.send(message)
-        print(f"Successfully sent OTP email to {to_email}! Status Code: {response.status_code}")
-    except Exception as e:
-        print(f"CRITICAL EMAIL ERROR: Failed to send OTP to {to_email} via SendGrid.")
-        print(f"Error details: {str(e)}")
-        traceback.print_exc()
-        raise e
+    print(f"Attempting to send OTP email to {to_email} via SendGrid...")
+    _send_with_retry(message)
+    print(f"Successfully sent OTP email to {to_email}!")
 
 
 async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name: str = "Student"):
@@ -112,16 +139,9 @@ async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name
         html_content=html_body,
     )
 
-    try:
-        print(f"Attempting to send Delivery OTP to {to_email} via SendGrid...")
-        sg = get_sendgrid_client()
-        response = sg.send(message)
-        print(f"Successfully sent Delivery OTP. Status Code: {response.status_code}")
-    except Exception as e:
-        print(f"Failed to send Delivery OTP to {to_email} via SendGrid.")
-        print(f"Error details: {str(e)}")
-        traceback.print_exc()
-        raise e
+    print(f"Attempting to send Delivery OTP to {to_email} via SendGrid...")
+    _send_with_retry(message)
+    print(f"Successfully sent Delivery OTP to {to_email}!")
 
 
 async def send_transaction_complete_email(to_email: str, order_id: int, product_title: str, seller_name: str = "Seller"):
@@ -163,13 +183,6 @@ async def send_transaction_complete_email(to_email: str, order_id: int, product_
         html_content=html_body,
     )
 
-    try:
-        print(f"Attempting to send Transaction Complete email to {to_email} via SendGrid...")
-        sg = get_sendgrid_client()
-        response = sg.send(message)
-        print(f"Successfully sent Transaction Complete email. Status: {response.status_code}")
-    except Exception as e:
-        print(f"Failed to send Transaction Complete email to {to_email} via SendGrid.")
-        print(f"Error details: {str(e)}")
-        traceback.print_exc()
-        raise e
+    print(f"Attempting to send Transaction Complete email to {to_email} via SendGrid...")
+    _send_with_retry(message)
+    print(f"Successfully sent Transaction Complete email to {to_email}!")

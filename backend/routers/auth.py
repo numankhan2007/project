@@ -20,6 +20,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 OTP_EXPIRY_SECONDS = 600  # 10 minutes
 VERIFIED_EMAIL_EXPIRY = 1800  # 30 minutes — how long a verified email stays valid
+RATE_LIMIT_WINDOW = 900  # 15 minutes
+RATE_LIMIT_MAX_SENDS = 5  # max OTP sends per email per window
+RATE_LIMIT_MAX_ATTEMPTS = 5  # max OTP verify attempts per email
 
 
 class RegistrationOTPRequest(BaseModel):
@@ -65,16 +68,35 @@ async def send_registration_otp(
 ):
     """
     Generate a 6-digit OTP and send it to the student's email for registration verification.
+    Rate limited: max 5 sends per email per 15 minutes.
     """
-    otp = str(secrets.randbelow(900000) + 100000)
-    
-    if redis_client:
-        # Store OTP in Redis with an exact expiration timer
-        redis_client.setex(f"reg_otp:{data.email}", OTP_EXPIRY_SECONDS, otp)
-    else:
+    if not redis_client:
         raise HTTPException(
             status_code=500, detail="Redis connection failed. OTP cannot be stored."
         )
+
+    # Rate limiting: check how many OTPs have been sent to this email recently
+    rate_key = f"otp_rate:{data.email}"
+    send_count = redis_client.get(rate_key)
+    if send_count and int(send_count) >= RATE_LIMIT_MAX_SENDS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many OTP requests. Please wait 15 minutes before trying again."
+        )
+
+    otp = str(secrets.randbelow(900000) + 100000)
+    
+    # Store OTP in Redis with expiration
+    redis_client.setex(f"reg_otp:{data.email}", OTP_EXPIRY_SECONDS, otp)
+    
+    # Reset attempt counter for this new OTP
+    redis_client.delete(f"otp_attempts:{data.email}")
+
+    # Increment rate limit counter
+    if send_count:
+        redis_client.incr(rate_key)
+    else:
+        redis_client.setex(rate_key, RATE_LIMIT_WINDOW, 1)
 
     try:
         await send_registration_otp_email(
@@ -98,9 +120,22 @@ async def send_registration_otp(
 def verify_registration_otp(data: RegistrationOTPVerify):
     """
     Verify the OTP entered by the user during registration.
+    Rate limited: max 5 attempts per email before OTP is invalidated.
     """
     if not redis_client:
          raise HTTPException(status_code=500, detail="Redis is not connected.")
+
+    # Check attempt count
+    attempt_key = f"otp_attempts:{data.email}"
+    attempts = redis_client.get(attempt_key)
+    if attempts and int(attempts) >= RATE_LIMIT_MAX_ATTEMPTS:
+        # Invalidate OTP after too many failed attempts
+        redis_client.delete(f"reg_otp:{data.email}")
+        redis_client.delete(attempt_key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed attempts. OTP has been invalidated. Please request a new one."
+        )
 
     stored_otp = redis_client.get(f"reg_otp:{data.email}")
 
@@ -111,13 +146,21 @@ def verify_registration_otp(data: RegistrationOTPVerify):
         )
 
     if stored_otp != data.otp:
+        # Increment attempt counter
+        if attempts:
+            redis_client.incr(attempt_key)
+        else:
+            redis_client.setex(attempt_key, OTP_EXPIRY_SECONDS, 1)
+        
+        remaining = RATE_LIMIT_MAX_ATTEMPTS - (int(attempts or 0) + 1)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP. Please try again."
+            detail=f"Invalid OTP. {remaining} attempt(s) remaining."
         )
 
     # OTP verified -- remove OTP from Redis and mark email as verified temporarily
     redis_client.delete(f"reg_otp:{data.email}")
+    redis_client.delete(attempt_key)
     redis_client.setex(f"reg_verified:{data.email}", VERIFIED_EMAIL_EXPIRY, "true")
 
     return {"verified": True, "message": "Email verified successfully!"}
@@ -138,7 +181,8 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
     """
     # Step 0: Validate phone number format (if provided)
     if data.phone_number:
-        if not re.match(r'^[6-9]\d{9}$', data.phone_number.strip()):
+        cleaned_phone = data.phone_number.strip()
+        if cleaned_phone and not re.match(r'^[6-9]\d{9}$', cleaned_phone):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid phone number. Must be a 10-digit Indian mobile number."

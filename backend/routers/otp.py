@@ -1,4 +1,3 @@
-import random
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -8,12 +7,16 @@ from models import Order, Product, UserProfile, OrderStatus, ProductStatus
 from schemas import OTPGenerate, OTPVerify, OTPSendEmail
 from dependencies import get_current_user
 from services.sendgrid_service import send_otp_email, send_transaction_complete_email
+from redis_client import redis_client
 
 router = APIRouter(prefix="/otp", tags=["OTP Handshake"])
 
+DELIVERY_OTP_EXPIRY = 600  # 10 minutes
+DELIVERY_OTP_MAX_ATTEMPTS = 5
+
 
 # ============================================================
-# POST /otp/generate — Generate 4-digit OTP
+# POST /otp/generate — Generate 6-digit OTP (stored in Redis)
 # ============================================================
 
 @router.post("/generate")
@@ -22,7 +25,7 @@ def generate_otp(
     current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Seller clicks 'Initiate Delivery'. Generates a 4-digit OTP."""
+    """Seller clicks 'Initiate Delivery'. Generates a 6-digit OTP stored in Redis with TTL."""
     order = db.query(Order).filter(Order.id == data.orderId).first()
 
     if not order:
@@ -37,7 +40,19 @@ def generate_otp(
             detail="Order must be CONFIRMED before initiating delivery"
         )
 
+    if not redis_client:
+        raise HTTPException(status_code=500, detail="Redis is not connected. Cannot generate OTP.")
+
     otp = str(secrets.randbelow(900000) + 100000)
+    
+    # Store OTP in Redis with expiration (NOT in DB — prevents brute-force)
+    redis_key = f"delivery_otp:{order.id}"
+    redis_client.setex(redis_key, DELIVERY_OTP_EXPIRY, otp)
+    
+    # Reset attempt counter
+    redis_client.delete(f"delivery_otp_attempts:{order.id}")
+    
+    # Also store in DB for reference (but verification uses Redis)
     order.otp_code = otp
     db.commit()
 
@@ -64,22 +79,54 @@ async def verify_otp(
     if order.seller_register_number != current_user.register_number:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the seller can verify OTP")
 
-    if not order.otp_code:
+    if not redis_client:
+        raise HTTPException(status_code=500, detail="Redis is not connected.")
+
+    # Check attempt count (brute-force protection)
+    attempt_key = f"delivery_otp_attempts:{order.id}"
+    attempts = redis_client.get(attempt_key)
+    if attempts and int(attempts) >= DELIVERY_OTP_MAX_ATTEMPTS:
+        # Invalidate OTP
+        redis_client.delete(f"delivery_otp:{order.id}")
+        redis_client.delete(attempt_key)
+        order.otp_code = None
+        db.commit()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No OTP has been generated for this order"
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed attempts. OTP has been invalidated. Please generate a new one."
         )
 
-    if order.otp_code != data.otp:
+    # Verify against Redis (not DB)
+    redis_key = f"delivery_otp:{order.id}"
+    stored_otp = redis_client.get(redis_key)
+
+    if not stored_otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP. Please try again."
+            detail="No OTP has been generated for this order, or it has expired."
         )
+
+    if stored_otp != data.otp:
+        # Increment attempt counter
+        if attempts:
+            redis_client.incr(attempt_key)
+        else:
+            redis_client.setex(attempt_key, DELIVERY_OTP_EXPIRY, 1)
+        
+        remaining = DELIVERY_OTP_MAX_ATTEMPTS - (int(attempts or 0) + 1)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid OTP. {remaining} attempt(s) remaining."
+        )
+
+    # OTP verified — clean up Redis
+    redis_client.delete(redis_key)
+    redis_client.delete(attempt_key)
 
     # Mark order as completed
     order.order_status = OrderStatus.COMPLETED
     order.completed_at = func.now()
-    order.otp_code = None
+    order.otp_code = None  # Clear from DB too
 
     # Mark product as sold
     product = db.query(Product).filter(Product.id == order.product_id).first()
@@ -129,10 +176,15 @@ async def send_otp_via_email(
     if order.seller_register_number != current_user.register_number:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the seller can send OTP")
 
-    if not order.otp_code:
+    if not redis_client:
+        raise HTTPException(status_code=500, detail="Redis is not connected.")
+
+    # Get OTP from Redis (not DB)
+    stored_otp = redis_client.get(f"delivery_otp:{order.id}")
+    if not stored_otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Generate an OTP first"
+            detail="Generate an OTP first, or the previous OTP has expired."
         )
 
     # Get buyer name for the email
@@ -145,7 +197,7 @@ async def send_otp_via_email(
     try:
         await send_otp_email(
             to_email=data.email,
-            otp_code=order.otp_code,
+            otp_code=stored_otp,
             order_id=order.id,
             buyer_name=buyer_name,
         )

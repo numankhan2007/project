@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import engine, Base
-from routers import auth, products, orders, chat, otp, payments
+from routers import auth, products, orders, chat, otp, payments, admin
 from scheduler import start_scheduler, stop_scheduler
 from seed_data import seed_official_records
 
@@ -13,10 +13,10 @@ from seed_data import seed_official_records
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP: Start scheduler (Database is managed via Alembic now)
+    # STARTUP: Start scheduler
     start_scheduler()
     
-    # Auto-seed official records if empty (workaround for lack of Render shell access)
+    # Auto-seed official records if empty
     try:
         seed_official_records()
         print("Database seeding check completed.")
@@ -41,12 +41,18 @@ app = FastAPI(
 )
 
 # ============================================================
-# CORS MIDDLEWARE (Allow React frontend)
+# CORS MIDDLEWARE (Restrict to known origins)
 # ============================================================
+
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",                    # Local Vite dev server
+    "http://localhost:3000",                    # Alternative local dev
+    "https://project-phi-pearl-50.vercel.app",  # Vercel production
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,6 +68,7 @@ app.include_router(orders.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(otp.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 # ============================================================
@@ -81,12 +88,3 @@ def root():
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
-
-@app.get("/api/seed-records")
-def manual_seed():
-    """Temporary endpoint to seed official records since Render free tier lacks shell access."""
-    try:
-        seed_official_records()
-        return {"status": "success", "message": "Official records seeded successfully."}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
