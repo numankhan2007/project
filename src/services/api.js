@@ -11,8 +11,11 @@ if (!VITE_API_URL && import.meta.env.PROD) {
 }
 
 let API_BASE_URL = VITE_API_URL || 'http://localhost:8000/api';
-if (API_BASE_URL && !API_BASE_URL.endsWith('/api')) {
-  API_BASE_URL = API_BASE_URL.replace(/\/$/, '') + '/api';
+if (API_BASE_URL) {
+  API_BASE_URL = API_BASE_URL.replace(/\/+$/, '');
+  if (!API_BASE_URL.endsWith('/api')) {
+    API_BASE_URL += '/api';
+  }
 }
 
 const api = axios.create({

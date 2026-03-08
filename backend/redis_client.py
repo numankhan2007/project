@@ -10,7 +10,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Create a connection pool to handle multiple concurrent requests
 try:
-    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+    redis_client = redis.from_url(REDIS_URL, decode_responses=True, health_check_interval=30)
     # Test connection
     redis_client.ping()
     print("Successfully connected to Redis.")

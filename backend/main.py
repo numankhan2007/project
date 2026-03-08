@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+import redis
 from contextlib import asynccontextmanager
 from database import engine, Base
 from routers import auth, products, orders, chat, otp, payments, admin
@@ -57,6 +59,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================
+# EXCEPTION HANDLERS (To preserve CORS on unhandled exceptions)
+# ============================================================
+
+@app.exception_handler(redis.RedisError)
+async def redis_exception_handler(request: Request, exc: redis.RedisError):
+    print(f"Redis Exception Caught: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Cache/Database connection failed. Please try again later."},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"Unhandled Exception Caught: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please contact support."},
+    )
 
 # ============================================================
 # REGISTER ALL ROUTERS (under /api prefix)
