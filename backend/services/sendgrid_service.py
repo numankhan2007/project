@@ -92,9 +92,9 @@ async def send_registration_otp_email(to_email: str, otp_code: str, student_id: 
         html_content=html_body,
     )
 
-    print(f"Attempting to send OTP email to {to_email} via SendGrid...")
-    _send_with_retry(message)
-    print(f"Successfully sent OTP email to {to_email}!")
+    print(f"MOCK: OTP code {otp_code} for {student_id} would be sent to {to_email}")
+    # _send_with_retry(message)
+    print(f"Successfully 'sent' MOCK OTP email to {to_email}!")
 
 
 async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name: str = "Student"):
