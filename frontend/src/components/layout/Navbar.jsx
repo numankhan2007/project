@@ -230,9 +230,9 @@ export default function Navbar() {
                     className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                   >
                     <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                      {user?.avatar ? (
+                      {user?.profilePictureUrl ? (
                         <img
-                          src={user.avatar}
+                          src={user.profilePictureUrl}
                           alt=""
                           className="w-full h-full object-cover"
                         />
@@ -275,7 +275,7 @@ export default function Navbar() {
                             )}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {user?.campus}
+                            {user?.university || 'Student'}
                           </p>
                           <p className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mt-1">
                             {user?.studentId}

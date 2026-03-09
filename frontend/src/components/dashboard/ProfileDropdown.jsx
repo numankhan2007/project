@@ -25,12 +25,16 @@ export default function ProfileDropdown() {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
       >
-        <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white font-bold">
-          {getInitials(user?.username || 'U')}
+        <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white font-bold overflow-hidden">
+          {user?.profilePictureUrl ? (
+            <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            getInitials(user?.username || 'U')
+          )}
         </div>
         <div className="text-left hidden sm:block">
           <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.username}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{user?.campus}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{user?.university || 'Student'}</p>
         </div>
         <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
