@@ -13,7 +13,7 @@ from schemas import (
 )
 from security import hash_password, verify_password, create_access_token
 from dependencies import get_current_user
-from services.sendgrid_service import send_registration_otp_email
+from services.email_service import send_registration_otp_email
 from redis_client import redis_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -105,6 +105,9 @@ async def send_registration_otp(
             student_id=data.register_number,
         )
     except Exception as e:
+        print(f"Error sending registration OTP: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, detail="Failed to send OTP email. Please try again later."
         )

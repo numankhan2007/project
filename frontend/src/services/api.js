@@ -5,8 +5,7 @@ const VITE_API_URL = import.meta.env.VITE_API_URL;
 if (!VITE_API_URL && import.meta.env.PROD) {
   console.error(
     "CRITICAL: VITE_API_URL is missing in production environment! " +
-    "Set it in Vercel → Settings → Environment Variables. " +
-    "Defaulting to localhost (will fail in production)."
+    "Set it in your .env file. Defaulting to localhost."
   );
 }
 
@@ -20,7 +19,7 @@ if (API_BASE_URL) {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased from 10s — Railway cold starts can be slow
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },

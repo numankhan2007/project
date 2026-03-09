@@ -6,7 +6,7 @@ from database import get_db
 from models import Order, Product, UserProfile, OrderStatus, ProductStatus
 from schemas import OTPGenerate, OTPVerify, OTPSendEmail
 from dependencies import get_current_user
-from services.sendgrid_service import send_otp_email, send_transaction_complete_email
+from services.email_service import send_otp_email, send_transaction_complete_email
 from redis_client import redis_client
 
 router = APIRouter(prefix="/otp", tags=["OTP Handshake"])

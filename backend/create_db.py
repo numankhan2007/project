@@ -15,14 +15,14 @@ def create_database():
         cur = conn.cursor()
         
         # Check if database exists
-        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'unimart'")
+        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'UNIMART_LOCAL'")
         exists = cur.fetchone()
         
         if not exists:
-            cur.execute('CREATE DATABASE unimart')
-            print("Database 'unimart' created successfully!")
+            cur.execute('CREATE DATABASE "UNIMART_LOCAL"')
+            print("Database 'UNIMART_LOCAL' created successfully!")
         else:
-            print("Database 'unimart' already exists.")
+            print("Database 'UNIMART_LOCAL' already exists.")
             
         cur.close()
         conn.close()

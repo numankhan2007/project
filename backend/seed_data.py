@@ -18,10 +18,12 @@ Base.metadata.create_all(bind=engine)
 def seed_official_records():
     db = SessionLocal()
 
-    # Delete existing records to "remove the temporary" data
-    db.query(OfficialRecord).delete()
-    db.commit()
-    print("Cleared existing official records.")
+    # Non-destructive: only seed if the table is empty
+    existing_count = db.query(OfficialRecord).count()
+    if existing_count > 0:
+        print(f"Official records already exist ({existing_count} records). Skipping seed.")
+        db.close()
+        return
 
     # Path to the new official database CSV
     csv_path = os.path.join(os.path.dirname(__file__), "official_database.csv")

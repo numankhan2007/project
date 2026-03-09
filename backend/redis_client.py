@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Railway provides Redis via REDIS_URL environment variable
-# We default to localhost for local development
+# Redis connection — defaults to localhost for local development
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Create a connection pool to handle multiple concurrent requests

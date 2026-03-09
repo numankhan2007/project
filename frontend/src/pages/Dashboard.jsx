@@ -31,8 +31,8 @@ export default function Dashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     username: user?.username || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    email: user?.personalMailId || '',
+    phone: user?.phoneNumber || '',
   });
 
   const buyOrders = getOrdersByBuyer(user?.username);
@@ -62,7 +62,7 @@ export default function Dashboard() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateProfile({ avatar: reader.result });
+        updateProfile({ profile_picture_url: reader.result });
       };
       reader.readAsDataURL(file);
     }
@@ -75,18 +75,17 @@ export default function Dashboard() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateProfile({ avatar: reader.result });
+        updateProfile({ profile_picture_url: reader.result });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Save: shallow merge / replacement — overwrites, not appends
   const handleEditSave = () => {
     updateProfile({
       username: editForm.username.trim() || user.username,
-      email: editForm.email.trim() || user.email,
-      phone: editForm.phone.trim() || user.phone,
+      personal_mail_id: editForm.email.trim() || user.personalMailId,
+      phone_number: editForm.phone.trim() || user.phoneNumber,
     });
     setShowEditModal(false);
   };
@@ -94,8 +93,8 @@ export default function Dashboard() {
   const openEditModal = () => {
     setEditForm({
       username: user?.username || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
+      email: user?.personalMailId || '',
+      phone: user?.phoneNumber || '',
     });
     setShowEditModal(true);
   };
@@ -156,8 +155,8 @@ export default function Dashboard() {
             {/* Avatar with upload */}
             <div className="relative group shrink-0">
               <div className="w-24 h-24 sm:w-20 sm:h-20 gradient-bg rounded-2xl flex items-center justify-center text-white text-3xl sm:text-2xl font-bold shadow-lg shadow-indigo-500/20 overflow-hidden">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                {user?.profilePictureUrl ? (
+                  <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   getInitials(user?.username || 'U')
                 )}
@@ -224,16 +223,16 @@ export default function Dashboard() {
 
               {/* Contact & ID Info */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mt-3 sm:mt-2.5 text-xs text-gray-500 dark:text-gray-400">
-                {user?.email && (
+                {user?.personalMailId && (
                   <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
                     <Mail size={12} className="text-gray-400 shrink-0" />
-                    <span className="truncate max-w-[180px] sm:max-w-none">{user.email}</span>
+                    <span className="truncate max-w-[180px] sm:max-w-none">{user.personalMailId}</span>
                   </span>
                 )}
-                {user?.phone && (
+                {user?.phoneNumber && (
                   <span className="flex items-center gap-1.5 bg-gray-50/80 dark:bg-gray-800/80 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50 shrink-0 whitespace-nowrap">
                     <Phone size={12} className="text-gray-400 shrink-0" />
-                    +91 {user.phone}
+                    +91 {user.phoneNumber}
                   </span>
                 )}
                 {user?.studentId && (
@@ -371,8 +370,8 @@ export default function Dashboard() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="relative group">
                       <div className="w-16 h-16 gradient-bg rounded-xl flex items-center justify-center text-white text-xl font-bold overflow-hidden">
-                        {user?.avatar ? (
-                          <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                        {user?.profilePictureUrl ? (
+                          <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
                           getInitials(user?.username || 'U')
                         )}

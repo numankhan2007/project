@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import redis
 from contextlib import asynccontextmanager
-from database import engine, Base
-from routers import auth, products, orders, chat, otp, payments, admin
+from sqlalchemy.orm import Session
+from database import engine, Base, get_db
+from models import UserProfile
+from routers import auth, products, orders, chat, otp, admin
 from scheduler import start_scheduler, stop_scheduler
 from seed_data import seed_official_records
 
@@ -49,7 +51,6 @@ app = FastAPI(
 ALLOWED_ORIGINS = [
     "http://localhost:5173",                    # Local Vite dev server
     "http://localhost:3000",                    # Alternative local dev
-    "https://project-phi-pearl-50.vercel.app",  # Vercel production
 ]
 
 app.add_middleware(
@@ -89,7 +90,6 @@ app.include_router(products.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(otp.router, prefix="/api")
-app.include_router(payments.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
 
@@ -110,3 +110,8 @@ def root():
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/stats")
+def get_stats(db: Session = Depends(get_db)):
+    student_count = db.query(UserProfile).count()
+    return {"registeredStudents": student_count}

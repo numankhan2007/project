@@ -1,14 +1,29 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, TrendingUp, Zap, BadgeCheck, Users } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import ProductFilters from '../components/product/ProductFilters';
 import { MOCK_PRODUCTS, CATEGORIES } from '../constants';
+import api from '../services/api';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
+  const [registeredCount, setRegisteredCount] = useState('...');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/stats');
+        setRegisteredCount(data.registeredStudents + "+");
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
+        setRegisteredCount('1,250+');
+      }
+    };
+    fetchStats();
+  }, []);
 
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
@@ -86,7 +101,7 @@ export default function Home() {
   };
 
   const stats = [
-    { icon: Users, label: 'Registered Students', value: '1,250+', color: 'indigo' },
+    { icon: Users, label: 'Registered Students', value: registeredCount, color: 'indigo' },
     { icon: TrendingUp, label: 'Categories', value: CATEGORIES.length, color: 'purple' },
     { icon: Zap, label: 'Quick Deals', value: '24h', color: 'pink' },
     { icon: BadgeCheck, label: 'Students', value: 'Verified', color: 'emerald' },
