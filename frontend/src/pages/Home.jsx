@@ -1,29 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, TrendingUp, Zap, BadgeCheck, Users } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import ProductFilters from '../components/product/ProductFilters';
 import { MOCK_PRODUCTS, CATEGORIES } from '../constants';
-import api from '../services/api';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
-  const [registeredCount, setRegisteredCount] = useState('...');
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const { data } = await api.get('/stats');
-        setRegisteredCount(data.registeredStudents + "+");
-      } catch (err) {
-        console.error("Failed to fetch stats", err);
-        setRegisteredCount('1,250+');
-      }
-    };
-    fetchStats();
-  }, []);
 
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
@@ -33,6 +18,8 @@ export default function Home() {
     priceMax: '',
     campus: '',
     freeOnly: false,
+    datePosted: '',
+    verifiedOnly: false,
   });
 
   const filteredProducts = useMemo(() => {
@@ -97,11 +84,11 @@ export default function Home() {
   }, [filters, searchQuery]);
 
   const clearFilters = () => {
-    setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false });
+    setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false, datePosted: '', verifiedOnly: false });
   };
 
   const stats = [
-    { icon: Users, label: 'Registered Students', value: registeredCount, color: 'indigo' },
+    { icon: Users, label: 'Registered Students', value: '1,250+', color: 'indigo' },
     { icon: TrendingUp, label: 'Categories', value: CATEGORIES.length, color: 'purple' },
     { icon: Zap, label: 'Quick Deals', value: '24h', color: 'pink' },
     { icon: BadgeCheck, label: 'Students', value: 'Verified', color: 'emerald' },
@@ -173,9 +160,10 @@ export default function Home() {
       <section className="section-padding py-8 -mt-6 relative z-10">
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {CATEGORIES.map((cat) => (
-            <button
+            <Link
               key={cat.id}
-              onClick={() => setFilters({ ...filters, category: filters.category === cat.id ? '' : cat.id })}
+              to={`/?category=${cat.id}`}
+              onClick={() => setFilters({ ...filters, category: cat.id })}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium transition-all border shadow-sm
                 ${filters.category === cat.id
                   ? 'gradient-bg text-white border-transparent shadow-md'
@@ -184,10 +172,7 @@ export default function Home() {
             >
               <span className="text-lg">{cat.icon}</span>
               {cat.name}
-              {filters.category === cat.id && (
-                <span className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-white/25 text-white text-xs font-bold leading-none">✕</span>
-              )}
-            </button>
+            </Link>
           ))}
         </div>
       </section>

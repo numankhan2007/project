@@ -13,7 +13,6 @@ import SellProduct from '../pages/SellProduct';
 import HelpCenter from '../pages/HelpCenter';
 import TermsAndConditions from '../pages/TermsAndConditions';
 import NotFound from '../pages/NotFound';
-import AboutUs from '../pages/AboutUs';
 
 export default function AppRoutes() {
   return (
@@ -22,7 +21,6 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/terms" element={<TermsAndConditions />} />
-      <Route path="/about" element={<AboutUs />} />
 
       {/* Protected Routes */}
       <Route

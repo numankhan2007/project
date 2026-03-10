@@ -2,27 +2,33 @@ import api from './api';
 
 const productService = {
   getAll: async (filters = {}) => {
-    return api.get('/products', { params: filters });
+    // In production: return api.get('/products', { params: filters });
+    return { data: [] };
   },
 
   getById: async (id) => {
-    return api.get(`/products/${id}`);
+    // In production: return api.get(`/products/${id}`);
+    return { data: null };
   },
 
   create: async (productData) => {
-    return api.post('/products', productData);
+    // In production: return api.post('/products', productData);
+    return { data: { id: Date.now(), ...productData } };
   },
 
   update: async (id, data) => {
-    return api.put(`/products/${id}`, data);
+    // In production: return api.put(`/products/${id}`, data);
+    return { data };
   },
 
   delete: async (id) => {
-    return api.delete(`/products/${id}`);
+    // In production: return api.delete(`/products/${id}`);
+    return { data: { success: true } };
   },
 
   search: async (query) => {
-    return api.get('/products/search', { params: { q: query } });
+    // In production: return api.get('/products/search', { params: { q: query } });
+    return { data: [] };
   },
 };
 

@@ -1,45 +1,30 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle, KeyRound, Mail, Loader2 } from 'lucide-react';
+import { Copy, Send, CheckCircle, KeyRound } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
+import { useOrders } from '../../context/OrderContext';
 import { useNotifications } from '../../context/NotificationContext';
-import otpService from '../../services/otpService';
 
-export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) {
+export default function OTPModal({ isOpen, onClose, order, mode = 'buyer' }) {
+  const { generateOrderOTP, verifyOTP } = useOrders();
   const { success, error: showError } = useNotifications();
-  const [otpSent, setOtpSent] = useState(false);
-  const [enteredOTP, setEnteredOTP] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState(order?.otp || '');
+  const [enteredOTP, setEnteredOTP] = useState(['', '', '', '', '', '']);
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
 
-  // ============================================================
-  // SELLER: Initiate Delivery → Backend generates OTP & emails buyer
-  // ============================================================
-
-  const handleInitiateDelivery = async () => {
-    setLoading(true);
-    try {
-      // Step 1: Generate OTP on the backend
-      const genResponse = await otpService.generate(order.id);
-
-      // Step 2: Send the OTP to buyer's email via backend
-      await otpService.sendViaEmail(order.id, order.buyer?.email || order.buyer?.personalMailId);
-
-      setOtpSent(true);
-      success('✅ OTP generated and sent to buyer\'s email!');
-    } catch (err) {
-      const msg = err?.response?.data?.detail || 'Failed to send OTP. Please try again.';
-      showError(msg);
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerateOTP = () => {
+    const newOTP = generateOrderOTP(order.id);
+    setOtp(newOTP);
+    success('OTP generated successfully! Share it with the seller upon delivery.');
   };
 
-  // ============================================================
-  // SELLER: Enter OTP from Buyer → Verify via backend
-  // ============================================================
+  const handleCopyOTP = () => {
+    navigator.clipboard.writeText(otp);
+    success('OTP copied to clipboard!');
+  };
 
   const handleOTPChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -47,7 +32,7 @@ export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) 
     newOTP[index] = value.slice(-1);
     setEnteredOTP(newOTP);
 
-    if (value && index < 3) {
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -61,114 +46,90 @@ export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) 
   const handleVerifyOTP = async () => {
     setLoading(true);
     const code = enteredOTP.join('');
-    try {
-      await otpService.verify(order.id, code);
+    await new Promise((r) => setTimeout(r, 800));
+    const result = verifyOTP(order.id, code);
+    setLoading(false);
+
+    if (result) {
       setVerified(true);
       success('🎉 Delivery confirmed! Product has been marked as sold.');
-    } catch (err) {
-      const msg = err?.response?.data?.detail || 'Invalid OTP. Please try again.';
-      showError(msg);
-      setEnteredOTP(['', '', '', '']);
+    } else {
+      showError('Invalid OTP. Please try again.');
+      setEnteredOTP(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setOtpSent(false);
-    setVerified(false);
-    setEnteredOTP(['', '', '', '']);
-    onClose();
   };
 
   if (!order) return null;
 
-  const titleMap = {
-    generate: 'Initiate Delivery',
-    verify: 'Verify Delivery',
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={titleMap[mode] || 'Delivery'} size="sm">
-      <div className="space-y-5">
-
-        {/* ============================================================ */}
-        {/* MODE: GENERATE — Seller initiates delivery, OTP sent to buyer */}
-        {/* ============================================================ */}
-        {mode === 'generate' && (
+    <Modal isOpen={isOpen} onClose={onClose} title={mode === 'buyer' ? 'Generate OTP' : 'Verify Delivery'} size="sm">
+      <div className="space-y-6">
+        {mode === 'buyer' ? (
           <>
-            {!otpSent ? (
-              <div className="text-center space-y-4 px-2">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-                  <Send size={24} className="text-indigo-500" />
+            {/* Buyer: Generate OTP */}
+            {!otp ? (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                  <KeyRound size={28} className="text-indigo-500" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">Initiate Delivery</h4>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    A 4-digit verification code will be sent to the buyer's registered email.
-                    The buyer will share this code with you after inspecting the product.
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Generate Delivery OTP</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Create a 6-digit OTP and share it with the seller when you receive the product.
                   </p>
                 </div>
-                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Only initiate delivery when you are ready to meet the buyer in person.
-                  </p>
-                </div>
-                <Button variant="primary" fullWidth loading={loading} onClick={handleInitiateDelivery} icon={Mail}>
-                  Send OTP to Buyer's Email
+                <Button variant="primary" fullWidth onClick={handleGenerateOTP}>
+                  Generate OTP
                 </Button>
               </div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-4 px-2"
-              >
+              <div className="text-center space-y-4">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center"
+                  className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center"
                 >
-                  <CheckCircle size={24} className="text-emerald-500" />
+                  <CheckCircle size={28} className="text-emerald-500" />
                 </motion.div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">OTP Sent via Email!</h4>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    The verification code has been sent to the buyer's registered email.
-                    Meet the buyer, let them inspect the product, and ask them for the 4-digit code.
-                  </p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Your OTP</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Share this code with the seller upon delivery</p>
                 </div>
-                <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3">
-                  <p className="text-xs text-indigo-700 dark:text-indigo-400">
-                    💡 Once you have the code, go to your Orders page and click <strong>"Enter OTP"</strong> to complete the transaction.
-                  </p>
+                <div className="flex items-center justify-center gap-2 py-4">
+                  {otp.split('').map((digit, i) => (
+                    <motion.span
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="w-11 h-14 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl text-2xl font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
+                    >
+                      {digit}
+                    </motion.span>
+                  ))}
                 </div>
-                <Button variant="secondary" fullWidth onClick={handleClose}>
-                  Done
+                <Button variant="secondary" fullWidth onClick={handleCopyOTP} icon={Copy}>
+                  Copy OTP
                 </Button>
-              </motion.div>
+              </div>
             )}
           </>
-        )}
-
-        {/* ============================================================ */}
-        {/* MODE: VERIFY — Seller enters OTP from buyer to confirm */}
-        {/* ============================================================ */}
-        {mode === 'verify' && (
+        ) : (
           <>
+            {/* Seller: Verify OTP */}
             {!verified ? (
-              <div className="text-center space-y-4 px-2">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-                  <KeyRound size={24} className="text-purple-500" />
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                  <KeyRound size={28} className="text-purple-500" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">Enter Buyer's OTP</h4>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    Enter the 4-digit code the buyer shared with you after inspecting the product.
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Enter Delivery OTP</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Enter the 6-digit OTP provided by the buyer to confirm delivery.
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 sm:gap-3 py-2">
+                <div className="flex items-center justify-center gap-2 py-2">
                   {enteredOTP.map((digit, i) => (
                     <input
                       key={i}
@@ -179,7 +140,7 @@ export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) 
                       value={digit}
                       onChange={(e) => handleOTPChange(i, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(i, e)}
-                      className="w-12 h-14 sm:w-14 sm:h-16 text-center bg-gray-100 dark:bg-gray-800 rounded-xl text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
+                      className="w-11 h-14 text-center bg-gray-100 dark:bg-gray-800 rounded-xl text-2xl font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
                     />
                   ))}
                 </div>
@@ -197,28 +158,27 @@ export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) 
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-4 py-4 px-2"
+                className="text-center space-y-4 py-4"
               >
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', damping: 10, stiffness: 200 }}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center"
+                  className="w-20 h-20 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center"
                 >
-                  <CheckCircle size={36} className="text-emerald-500" />
+                  <CheckCircle size={40} className="text-emerald-500" />
                 </motion.div>
-                <h4 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Delivery Confirmed!</h4>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  The product has been marked as sold. A confirmation email has been sent to you.
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white">Delivery Confirmed!</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  The product has been marked as sold and moved to your sell history.
                 </p>
-                <Button variant="success" fullWidth onClick={handleClose}>
+                <Button variant="success" fullWidth onClick={onClose}>
                   Done
                 </Button>
               </motion.div>
             )}
           </>
         )}
-
       </div>
     </Modal>
   );

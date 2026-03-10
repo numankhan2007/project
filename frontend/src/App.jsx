@@ -4,7 +4,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { OrderProvider } from './context/OrderContext';
 import { ChatProvider } from './context/ChatContext';
 import { NotificationProvider } from './context/NotificationContext';
-import ErrorBoundary from './components/common/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import MobileNav from './components/layout/MobileNav';
@@ -30,21 +29,18 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <OrderProvider>
-              <ChatProvider>
-                <NotificationProvider>
-                  <AppLayout />
-                </NotificationProvider>
-              </ChatProvider>
-            </OrderProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <BrowserRouter basename="/project">
+      <ThemeProvider>
+        <AuthProvider>
+          <OrderProvider>
+            <ChatProvider>
+              <NotificationProvider>
+                <AppLayout />
+              </NotificationProvider>
+            </ChatProvider>
+          </OrderProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
-

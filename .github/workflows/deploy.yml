@@ -24,13 +24,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
+        working-directory: ./frontend
         run: npm ci
 
       - name: Build with production API URL
+        working-directory: ./frontend
         run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
@@ -41,7 +43,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./frontend/dist
 
   deploy:
     environment:

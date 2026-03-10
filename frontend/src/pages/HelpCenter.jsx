@@ -179,15 +179,12 @@ export default function HelpCenter() {
         <div className="card p-6 text-center bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-200 dark:border-indigo-800/30">
           <MessageCircle size={28} className="mx-auto text-indigo-500 mb-3" />
           <h3 className="font-bold text-gray-900 dark:text-white">Still need help?</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
             Our support team is available 24/7 to assist you.
           </p>
-          <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-4">
-            VGLUG Foundation Support: <a href="mailto:villupuramglug@gmail.com" className="underline hover:text-indigo-800 dark:hover:text-indigo-300">villupuramglug@gmail.com</a>
-          </p>
-          <a href="mailto:villupuramglug@gmail.com" className="btn-primary text-sm inline-block">
+          <button className="btn-primary text-sm">
             Contact Support
-          </a>
+          </button>
         </div>
       </motion.div>
     </div>

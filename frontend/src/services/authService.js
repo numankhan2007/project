@@ -2,23 +2,23 @@ import api from './api';
 
 const authService = {
   login: async (studentId, password) => {
-    return api.post('/auth/login', { studentId, password });
+    // In production: return api.post('/auth/login', { studentId, password });
+    return { data: { token: 'mock_token', user: { studentId, username: 'user' } } };
   },
 
   register: async (data) => {
-    return api.post('/auth/register', data);
-  },
-
-  verifyRegisterNumber: async (registerNumber) => {
-    return api.get(`/auth/verify/${registerNumber}`);
+    // In production: return api.post('/auth/register', data);
+    return { data: { token: 'mock_token', user: data } };
   },
 
   getProfile: async () => {
-    return api.get('/auth/profile');
+    // In production: return api.get('/auth/profile');
+    return { data: JSON.parse(localStorage.getItem('unimart_user')) };
   },
 
   updateProfile: async (data) => {
-    return api.put('/auth/profile', data);
+    // In production: return api.put('/auth/profile', data);
+    return { data };
   },
 };
 

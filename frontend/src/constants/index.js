@@ -5,6 +5,11 @@ export const CATEGORIES = [
   { id: 'electronics', name: 'Electronics', icon: '💻', color: 'cyan' },
   { id: 'notes', name: 'Notes & Study Material', icon: '📝', color: 'purple' },
   { id: 'sports', name: 'Sports Equipment', icon: '⚽', color: 'emerald' },
+  { id: 'accessories', name: 'Accessories', icon: '🎧', color: 'pink' },
+  { id: 'hostel', name: 'Hostel Essentials', icon: '🛋️', color: 'amber' },
+  { id: 'lab', name: 'Lab Equipment', icon: '🧪', color: 'rose' },
+  { id: 'art', name: 'Art & Craft', icon: '🎨', color: 'orange' },
+  { id: 'transport', name: 'Bicycles & Transport', icon: '🚲', color: 'teal' },
   { id: 'other', name: 'Other', icon: '📦', color: 'gray' },
 ];
 
@@ -59,66 +64,12 @@ export const CAMPUSES = [
   'School of Excellence in Law, Chennai',
 ];
 
-// Mock student registry for verify-first registration flow
-// Each entry includes official email for masked-email OTP verification
-export const STUDENT_REGISTRY = {
-  '20124UBCA081': {
-    name: 'NUMAN KHAN. M',
-    email: 'm.numankhan2007@gmail.com',
-    university: 'ANNAMALAI UNIVERSITY',
-    college: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
-    department: 'BCA',
-  },
-  'STU2024001': {
-    name: 'Alex Doe',
-    email: 'alex.doe@student.annauniv.edu',
-    university: 'Anna University',
-    college: 'College of Engineering, Guindy (CEG)',
-    department: 'Computer Science and Engineering',
-  },
-  'STU2024002': {
-    name: 'Priya Sharma',
-    email: 'priya.s@loyola.edu',
-    university: 'University of Madras',
-    college: 'Loyola College',
-    department: 'B.Sc. Computer Science',
-  },
-  'STU2024003': {
-    name: 'Karthik R',
-    email: 'karthik.r@psg.edu',
-    university: 'Bharathiar University',
-    college: 'PSG College of Arts & Science',
-    department: 'B.Com. General',
-  },
-  'STU2024004': {
-    name: 'Deepa M',
-    email: 'deepa.m@mit.annauniv.edu',
-    university: 'Anna University',
-    college: 'Madras Institute of Technology (MIT)',
-    department: 'Aeronautical Engineering',
-  },
-  'STU2024005': {
-    name: 'Ravi Kumar',
-    email: 'ravi.k@bishopheber.edu',
-    university: 'Bharathidasan University',
-    college: 'Bishop Heber College',
-    department: 'B.Sc. Mathematics',
-  },
-};
-
-// Helper to mask email: "alex.doe@gmail.com" → "a***e@gmail.com"
-export const maskEmail = (email) => {
-  const [local, domain] = email.split('@');
-  if (local.length <= 2) return local[0] + '***@' + domain;
-  return local[0] + '***' + local[local.length - 1] + '@' + domain;
-};
-
 export const ORDER_STATUS = {
-  PENDING: 'PENDING',
-  ACCEPTED: 'CONFIRMED',
-  OTP_GENERATED: 'OTP_GENERATED',
-  DELIVERED: 'COMPLETED',
-  CANCELLED: 'CANCELLED',
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  OTP_GENERATED: 'otp_generated',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
 };
 
 export const ORDER_STATUS_LABELS = {
@@ -131,19 +82,14 @@ export const ORDER_STATUS_LABELS = {
 
 export const MOCK_USER = {
   id: 'stu_001',
-  studentId: '20124UBCA081',
-  name: 'NUMAN KHAN. M',
-  username: 'numan_khan',
-  email: 'm.numankhan2007@gmail.com',
-  phone: '8610264946',
-  university: 'ANNAMALAI UNIVERSITY',
-  college: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
-  department: 'BCA',
-  campus: 'ARIGNAR ANNA GOVERNMENT ARTS COLLEGE, VILLUPURAM',
+  studentId: 'STU2024001',
+  username: 'alex_doe',
+  email: 'alex.doe@student.annauniv.edu',
+  phone: '9876543210',
+  campus: 'Anna University, Chennai',
   avatar: null,
   verified: true,
-  usernameChangeCount: 0,
-  createdAt: '2026-02-28',
+  createdAt: '2024-09-01',
 };
 
 export const MOCK_PRODUCTS = [
@@ -154,11 +100,7 @@ export const MOCK_PRODUCTS = [
     price: 450,
     category: 'textbooks',
     condition: 'Good',
-    images: [
-      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400',
-      'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400',
-      'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400'
-    ],
+    images: ['https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400'],
     seller: { username: 'math_nerd', campus: 'Anna University, Chennai' },
     status: 'available',
     createdAt: '2024-12-01',
@@ -170,12 +112,7 @@ export const MOCK_PRODUCTS = [
     price: 72000,
     category: 'electronics',
     condition: 'Like New',
-    images: [
-      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400',
-      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400',
-      'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400',
-      'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400'
-    ],
+    images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400'],
     seller: { username: 'tech_guru', campus: 'VIT, Vellore' },
     status: 'available',
     createdAt: '2024-11-28',
@@ -235,11 +172,7 @@ export const MOCK_PRODUCTS = [
     price: 18000,
     category: 'electronics',
     condition: 'Like New',
-    images: [
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
-      'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400',
-      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400'
-    ],
+    images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'],
     seller: { username: 'audio_fan', campus: 'Loyola College, Chennai' },
     status: 'sold',
     createdAt: '2024-11-25',
@@ -251,12 +184,7 @@ export const MOCK_PRODUCTS = [
     price: 800,
     category: 'other',
     condition: 'Good',
-    images: [
-      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400',
-      'https://images.unsplash.com/photo-1580584126903-c17d41830450?w=400',
-      'https://images.unsplash.com/photo-1614316345862-28c0cc1124e5?w=400',
-      'https://images.unsplash.com/photo-1510936111840-65e151ad71bb?w=400'
-    ],
+    images: ['https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400'],
     seller: { username: 'alex_doe', campus: 'Anna University, Chennai' },
     status: 'available',
     createdAt: '2024-12-09',

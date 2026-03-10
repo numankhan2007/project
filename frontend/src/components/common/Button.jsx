@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 const variants = {
-  primary: 'gradient-bg text-white shadow-lg hover:shadow-xl active:scale-95',
+  primary: 'gradient-bg text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95',
   secondary: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700',
   outline: 'border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950',
   danger: 'bg-rose-500 text-white hover:bg-rose-600 shadow-lg hover:shadow-xl',
@@ -32,9 +32,7 @@ export default function Button({
 }) {
   return (
     <motion.button
-      whileHover={{ scale: disabled || loading ? 1 : 1.03, y: disabled || loading ? 0 : -1 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.97 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+      whileTap={{ scale: 0.97 }}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
@@ -42,7 +40,6 @@ export default function Button({
         inline-flex items-center justify-center gap-2 font-semibold rounded-xl
         transition-all duration-300 cursor-pointer
         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-        focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
         ${variants[variant]}
         ${sizes[size]}
         ${fullWidth ? 'w-full' : ''}
@@ -51,12 +48,7 @@ export default function Button({
       {...props}
     >
       {loading && (
-        <motion.svg
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-        >
+        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12" cy="12" r="10"
@@ -67,7 +59,7 @@ export default function Button({
             fill="currentColor"
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
           />
-        </motion.svg>
+        </svg>
       )}
       {!loading && Icon && iconPosition === 'left' && <Icon size={18} />}
       {children}
