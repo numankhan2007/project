@@ -1,39 +1,19 @@
-"""
-Test database connection using environment variables.
-Usage: python test_db.py
-"""
 import os
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
-
-from dotenv import load_dotenv
-load_dotenv()
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import OfficialRecord
+from sqlalchemy_utils import database_exists, create_database
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+load_dotenv()
+database_url = os.getenv("DATABASE_URL")
 
-if not DATABASE_URL:
-    print("ERROR: DATABASE_URL environment variable is not set.")
-    print("Set it in backend/.env or as a system environment variable.")
-    sys.exit(1)
+engine = create_engine(database_url)
+if not database_exists(engine.url):
+    print("Database does not exist. Creating...")
+    create_database(engine.url)
+    print("Database created successfully!")
+else:
+    print("Database already exists. Connection successful!")
 
-try:
-    engine = create_engine(DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
-
-    # Check official records
-    records = db.query(OfficialRecord).all()
-    print(f"Total official records: {len(records)}")
-    for r in records[:5]:
-        print(f" - {r.register_number} — {r.full_name}")
-
-    db.close()
-    print("\nDatabase connection successful!")
-
-except Exception as e:
-    print(f"Error: {e}")
+from sqlalchemy import inspect
+inspector = inspect(engine)
+print("Tables in DB:", inspector.get_table_names())
