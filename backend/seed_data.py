@@ -25,8 +25,8 @@ def seed_official_records():
         db.close()
         return
 
-    # Path to the new official database CSV
-    csv_path = os.path.join(os.path.dirname(__file__), "official_database.csv")
+    # Path to the official data CSV
+    csv_path = os.path.join(os.path.dirname(__file__), "official_data.csv")
     
     if not os.path.exists(csv_path):
         print(f"Error: {csv_path} not found.")
