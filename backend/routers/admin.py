@@ -17,6 +17,40 @@ load_dotenv()
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 ADMIN_KEY = os.getenv("ADMIN_KEY", "unimart-admin-secret-change-this-in-production")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
+
+# ============================================================
+# Schemas for Admin Login
+# ============================================================
+
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+# ============================================================
+# POST /admin/login — Admin login with username/password
+# ============================================================
+
+@router.post("/login")
+def admin_login(data: AdminLoginRequest):
+    """
+    Authenticate admin with username and password.
+    Returns admin key for subsequent API calls.
+    """
+    if data.username != ADMIN_USERNAME or data.password != ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin credentials"
+        )
+
+    return {
+        "success": True,
+        "admin_key": ADMIN_KEY,
+        "message": "Admin login successful",
+    }
 
 
 # ============================================================

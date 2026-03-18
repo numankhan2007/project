@@ -2,9 +2,11 @@ import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 
 // Pages
+import Landing from '../pages/Landing';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import AdminLogin from '../pages/AdminLogin';
 import ProductPage from '../pages/ProductPage';
 import Dashboard from '../pages/Dashboard';
 import Orders from '../pages/Orders';
@@ -19,14 +21,16 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/terms" element={<TermsAndConditions />} />
       <Route path="/about" element={<AboutUs />} />
 
       {/* Protected Routes */}
       <Route
-        path="/"
+        path="/home"
         element={
           <ProtectedRoute>
             <Home />

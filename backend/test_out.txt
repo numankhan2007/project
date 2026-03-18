@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "D:\ANTIGRAVITY-CODE\project\backend\test_sendgrid_script.py", line 3, in <module>
-    from services.sendgrid_service import send_registration_otp_email, get_sendgrid_client
-  File "D:\ANTIGRAVITY-CODE\project\backend\services\sendgrid_service.py", line 3, in <module>
-    from sendgrid import SendGridAPIClient
-ModuleNotFoundError: No module named 'sendgrid'
