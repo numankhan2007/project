@@ -11,3 +11,4 @@ pydantic>=2.7.0
 apscheduler>=3.10.0
 redis>=5.0.0
 alembic>=1.13.0
+sendgrid>=6.10.0
