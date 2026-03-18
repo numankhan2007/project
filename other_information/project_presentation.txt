@@ -1,0 +1,36 @@
+====================================================
+UNIMART - SECURE STUDENT-TO-STUDENT MARKETPLACE
+====================================================
+
+OVERVIEW:
+UNIMART is a modern, responsive, securely integrated marketplace strictly built for university students to trade items such as textbooks, electronics, and study notes. Transactions are validated with official databases, ensuring only genuine students interact. The platform features an OTP-authenticated delivery system and built-in chat, elevating safety and engagement within the campus.
+
+TECHNOLOGY STACK:
+1. Frontend Suite (Client-Side):
+   - React.js (Vite): Provides explosive performance and a highly reactive user interface.
+   - Tailwind CSS: Delivers a sleek, modern, and perfectly responsive styling paradigm.
+   - React Router Dom: Enables smooth, robust client-side routing.
+   - React Context API: Handles unified global state management across dynamic components.
+   - Framer Motion: Adds sophisticated component animations and micro-interactions.
+   - Lucide React: Supplies lightweight, high-fidelity SVG icons.
+   - Axios: Handles seamless RESTful interactions with the API.
+
+2. Backend Suite (Server-Side):
+   - FastAPI: An insanely fast, modern Python web framework used to expose clean RESTful APIs.
+   - PostgreSQL: A powerful, highly-reliable open-source relational database to store business entities.
+   - SQLAlchemy: The robust Python ORM handling database models and complex operational queries.
+   - Uvicorn: The standard ASGI web server to host FastAPI asynchronously with high throughput.
+   - Redis: In-memory cache store employed for throttling requests and OTP session management.
+   - PyJWT & Passlib: Handles robust password hashing (bcrypt) and cryptographic user authentication.
+   - APScheduler: Implements cron-like background tasks, such as clearing expired records automatically.
+
+3. External/Integration Services:
+   - SMTPLib (Native Python Emailing): Sends verified OTP emails seamlessly to secure buyer-seller exchanges.
+
+KEY DIFFERENTIATORS FOR ENTERPRISE & LARGE DEPLOYMENTS:
+- Identity Verification: Enforced matching against a pre-loaded university 'Master Registry', blocking fraudulent or external actors automatically.
+- OTP Delivery Ecosystem: The system locks completed transactions using a buyer-to-seller handoff OTP procedure.
+- Scalable Architecture: The project logically decouples a stateless API from the frontend via Cross-Origin Resource Sharing (CORS), facilitating separate scaling cycles in Azure or AWS.
+
+CONCLUSION:
+UNIMART is engineered natively with industry-grade software architectural standards, robust data relationship modeling, and security-heavy workflows well worth scaling to multi-campus availability globally.
