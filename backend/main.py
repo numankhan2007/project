@@ -50,7 +50,9 @@ app = FastAPI(
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",                    # Local Vite dev server
+    "http://127.0.0.1:5173",                    # Local Vite dev server (IP)
     "http://localhost:3000",                    # Alternative local dev
+    "http://127.0.0.1:3000",                    # Alternative local dev (IP)
 ]
 
 app.add_middleware(
