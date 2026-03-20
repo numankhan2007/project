@@ -61,12 +61,20 @@ def get_current_admin(
 
 
 def seed_super_admin(db: Session) -> None:
-    """Seed the super admin account on startup. Safe to call multiple times."""
+    """Seed the super admin account on startup. Updates password if admin exists."""
     username = os.getenv("ADMIN_USERNAME", "superadmin")
     password = os.getenv("ADMIN_PASSWORD")
     if not password:
         raise RuntimeError("ADMIN_PASSWORD env variable is not set. Refusing to start.")
-    if not db.query(AdminAccount).filter_by(username=username).first():
+
+    existing_admin = db.query(AdminAccount).filter_by(username=username).first()
+    if existing_admin:
+        # Update password to match current env value (allows password changes via .env)
+        existing_admin.hashed_password = bcrypt_context.hash(password)
+        existing_admin.display_name = os.getenv("ADMIN_DISPLAY_NAME", "Super Admin")
+        db.commit()
+        print(f"Super admin '{username}' password updated from environment.")
+    else:
         db.add(AdminAccount(
             username=username,
             hashed_password=bcrypt_context.hash(password),
