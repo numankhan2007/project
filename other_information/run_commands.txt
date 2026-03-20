@@ -2,6 +2,26 @@
 COMMANDS TO RUN THE PROJECT
 =========================================
 
+0. SYNCING WITH GITHUB (GIT PULL):
+-----------------------------------
+Run these commands to pull the latest changes from the main branch before starting the project.
+
+A. Open a new terminal (Git Bash, PowerShell, or Command Prompt).
+B. Navigate to the project root directory (replace with your actual path):
+   cd d:\CODE\UNIMART\project
+C. Pull the latest changes from GitHub main branch:
+   git pull origin main
+
+If you are on a feature branch and want to merge the latest main into it:
+   git fetch origin
+   git merge origin/main
+
+After pulling, re-install dependencies if package files changed:
+   - Frontend: cd frontend && npm install
+   - Backend:  cd backend && pip install -r requirements.txt
+
+
+
 1. STARTING THE FRONTEND:
 -------------------------
 A. Open a new terminal.
