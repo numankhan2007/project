@@ -3,6 +3,7 @@ SMTP Email Service for Unimart.
 Replaces SendGrid with standard Python smtplib for local development.
 """
 
+import asyncio
 import os
 import smtplib
 import traceback
@@ -98,7 +99,8 @@ async def send_registration_otp_email(to_email: str, otp_code: str, student_id: 
     """
 
     print(f"Sending registration OTP to {to_email} for {student_id}...")
-    _send_email(to_email, "🔐 Unimart Registration Verification Code", html_body)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _send_email, to_email, "🔐 Unimart Registration Verification Code", html_body)
 
 
 async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name: str = "Student"):
@@ -137,7 +139,8 @@ async def send_otp_email(to_email: str, otp_code: str, order_id: int, buyer_name
     """
 
     print(f"Sending delivery OTP to {to_email} for Order #{order_id}...")
-    _send_email(to_email, f"🔐 Unimart Delivery Code — Order #{order_id}", html_body)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _send_email, to_email, f"🔐 Unimart Delivery Code — Order #{order_id}", html_body)
 
 
 async def send_transaction_complete_email(to_email: str, order_id: int, product_title: str, seller_name: str = "Seller"):
@@ -173,4 +176,5 @@ async def send_transaction_complete_email(to_email: str, order_id: int, product_
     """
 
     print(f"Sending transaction complete email to {to_email} for Order #{order_id}...")
-    _send_email(to_email, f"✅ Transaction Complete — Order #{order_id}", html_body)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _send_email, to_email, f"✅ Transaction Complete — Order #{order_id}", html_body)
