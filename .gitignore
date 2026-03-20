@@ -51,3 +51,6 @@ git_status_utf8.txt
 
 # Local scripts
 *.bat
+
+# Prompt/script files (may contain sensitive info)
+PROMPT/
