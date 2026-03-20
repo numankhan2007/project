@@ -1,36 +1,152 @@
-====================================================
-UNIMART - SECURE STUDENT-TO-STUDENT MARKETPLACE
-====================================================
+=============================================================
+           U N I M A R T  -  A R C H I T E C T U R E  &  S Y S T E M  A N A L Y S I S
+=============================================================
+A Comprehensive Deep-Dive by the Principal Software Architect
+=============================================================
 
-OVERVIEW:
-UNIMART is a modern, responsive, securely integrated marketplace strictly built for university students to trade items such as textbooks, electronics, and study notes. Transactions are validated with official databases, ensuring only genuine students interact. The platform features an OTP-authenticated delivery system and built-in chat, elevating safety and engagement within the campus.
 
-TECHNOLOGY STACK:
-1. Frontend Suite (Client-Side):
-   - React.js (Vite): Provides explosive performance and a highly reactive user interface.
-   - Tailwind CSS: Delivers a sleek, modern, and perfectly responsive styling paradigm.
-   - React Router Dom: Enables smooth, robust client-side routing.
-   - React Context API: Handles unified global state management across dynamic components.
-   - Framer Motion: Adds sophisticated component animations and micro-interactions.
-   - Lucide React: Supplies lightweight, high-fidelity SVG icons.
-   - Axios: Handles seamless RESTful interactions with the API.
+=== SLIDE 1: PROJECT OVERVIEW ===
+• Project Name: UNIMART
+• Purpose: A secure, closed-ecosystem marketplace for university students to buy, sell, and trade items seamlessly.
+• Target Users: Verified University Students.
+• Core Idea: Eliminating scams and outsider interference on campus by locking profiles to an "Official Master Registry." Every transaction is strictly student-to-student and finalized with an OTP handshake mechanism.
 
-2. Backend Suite (Server-Side):
-   - FastAPI: An insanely fast, modern Python web framework used to expose clean RESTful APIs.
-   - PostgreSQL: A powerful, highly-reliable open-source relational database to store business entities.
-   - SQLAlchemy: The robust Python ORM handling database models and complex operational queries.
-   - Uvicorn: The standard ASGI web server to host FastAPI asynchronously with high throughput.
-   - Redis: In-memory cache store employed for throttling requests and OTP session management.
-   - PyJWT & Passlib: Handles robust password hashing (bcrypt) and cryptographic user authentication.
-   - APScheduler: Implements cron-like background tasks, such as clearing expired records automatically.
 
-3. External/Integration Services:
-   - SMTPLib (Native Python Emailing): Sends verified OTP emails seamlessly to secure buyer-seller exchanges.
+=== SLIDE 2: TECH STACK ===
+Frontend:
+• Framework: React 18 with Vite
+• Styling: TailwindCSS (Utility-first CSS)
+• UI/UX Enhancements: Framer Motion (Animations), Lucide React (Icons)
+• Routing & State: React Router DOM, React Context API
+• HTTP Client: Axios
 
-KEY DIFFERENTIATORS FOR ENTERPRISE & LARGE DEPLOYMENTS:
-- Identity Verification: Enforced matching against a pre-loaded university 'Master Registry', blocking fraudulent or external actors automatically.
-- OTP Delivery Ecosystem: The system locks completed transactions using a buyer-to-seller handoff OTP procedure.
-- Scalable Architecture: The project logically decouples a stateless API from the frontend via Cross-Origin Resource Sharing (CORS), facilitating separate scaling cycles in Azure or AWS.
+Backend:
+• Framework: FastAPI (Asynchronous Python API framework)
+• ORM & Migrations: SQLAlchemy, Alembic
+• Background Tasks: APScheduler
 
-CONCLUSION:
-UNIMART is engineered natively with industry-grade software architectural standards, robust data relationship modeling, and security-heavy workflows well worth scaling to multi-campus availability globally.
+Database & Infrastructure:
+• Primary Database: PostgreSQL
+• Cache & Rate Limiting: Redis (OTP storage and counters)
+• Mail Service: SMTP (Python's native smtplib for local dev, previously SendGrid)
+
+
+=== SLIDE 3: PROJECT STRUCTURE ===
+project/
+├── frontend/
+│   ├── src/
+│   │   ├── pages/         # React pages (Home, Login, Register, Dashboard, etc.)
+│   │   ├── components/    # Reusable UI elements (Buttons, Navbar, Inputs)
+│   │   ├── services/      # API communication layer (Axios interceptors)
+│   │   ├── context/       # Global state (AuthContext, ThemeContext)
+│   │   └── routes/        # AppRoutes definition
+├── backend/
+│   ├── routers/           # Separated API logic (auth, products, orders, otp, admin)
+│   ├── services/          # External service integrations (email_service.py)
+│   ├── models.py          # SQLAlchemy ORM schemas
+│   ├── schemas.py         # Pydantic schemas for data validation
+│   ├── main.py            # FastAPI entry point & CORS configuration
+│   └── database.py        # PostgreSQL connection logic
+
+
+=== SLIDE 4: FRONTEND ANALYSIS ===
+• Pages: App features robust routing wrapping pages like Login, Register, Dashboard, ProductPage, Orders, and ChatPage inside a ProtectedRoute component.
+• Components: Employs a segmented component architecture (layout, common, product, chat). Forms use a custom Input component with dynamic error rendering.
+• API Calls: Centralized API instances with Axios interceptors managing token injection and responses contextually inside `src/services/`.
+• State Management: Comprehensive React Context providers (AuthContext, ThemeContext, OrderContext, ChatContext) eliminate aggressive prop-drilling.
+• UI Features: Heavy use of Framer Motion for mounting/unmounting transitions. Intelligent loaders, skeletons, and Toast notifications ensure constant user feedback.
+
+
+=== SLIDE 5: BACKEND ANALYSIS ===
+• FastAPI Setup: High performance Async views. App lifecycle utilizes `lifespan` handlers to start database seeding (`official_records`) and background tasks seamlessly.
+• Routers: Endpoints isolated into distinct files: `/auth` (Identity), `/products` (Inventory), `/orders` (Transactions), `/otp` (Verification), and `/admin` (Management).
+• Authentication System: Utilizes JWT (JSON Web Tokens) generated after verifying hashed passwords (passlib/bcrypt). Custom dependency `get_current_user` extracts and decodes the JWT for secured routes.
+• OTP Flow: Built heavily on Redis. OTPs are stored with TTLs (Time-To-Live). DB is spared from bloated, temporary OTP codes.
+• Middleware: Global CORS middleware restricts access specifically to predefined frontend origins (localhost variants). Global exception catchers prevent application crashing on Redis/Postgres drops.
+
+
+=== SLIDE 6: DATABASE DESIGN ===
+The database implements a "Phase-based" integrity level design.
+
+1. `official_records` (Read-Only Master)
+   • Fields: register_number (PK), full_name, university, college, department, official_email
+   • Purpose: Immutable root-of-truth. Students cannot register unless they exist here.
+
+2. `user_profiles` (Read/Write)
+   • Fields: register_number (PK/FK), username, hashed_password, personal_mail_id, phone_number
+   • Purpose: Extends official data with app-specific mutable credentials.
+
+3. `products`
+   • Fields: id, seller_register_number(FK), title, price, image_urls (JSON API), product_status
+   • Purpose: Stores active inventory, transitioning strictly from AVAILABLE -> RESERVED -> SOLD_OUT.
+
+4. `orders` & `chat_messages`
+   • Fields: id, product_id, buyer/seller register numbers, order_status
+   • Purpose: Links a buyer, seller, and product. Chat operates under the umbrella of an Order ID.
+
+
+=== SLIDE 7: API FLOW (VERY IMPORTANT) ===
+• Register Flow: 
+  Frontend (Reg No) -> Backend matches `official_records` -> Triggers OTP generation to official email via Redis -> Frontend submits OTP -> Backend flags email as verified -> Frontend submits Form -> Backend creates UserProfile & returns JWT.
+
+• Login Flow: 
+  Frontend -> `/auth/login` (accepts Username or Reg No) -> Checks bcrypt password hash -> Returns JWT.
+
+• Product Upload Flow: 
+  Frontend POST `/products` -> `get_current_user` verifies JWT -> Product added to database -> Available on market.
+
+• OTP Transaction Flow:
+  Buyer creates order -> Order goes PENDING -> Seller confirms -> "Initiate Delivery" generating Redis OTP -> Backend emails OTP to Buyer -> Physical meetup: Buyer inspects product -> hands OTP to Seller -> Seller enters OTP -> Order COMPLETED.
+
+
+=== SLIDE 8: AUTHENTICATION SYSTEM ===
+• JWT Usage: Security revolves around stateless Bearer tokens generated via PyJWT upon login or successful signup.
+• Protected Routes: Backend endpoints inject `Depends(get_current_user)`. Frontend verifies authentication state locally via `AuthContext`.
+• Admin Role System: Isolated endpoint environment (`/admin/`). Instead of JWT, it utilizes an environment variable (`ADMIN_KEY`) passed via the `X-Admin-Key` header.
+
+
+=== SLIDE 9: OTP SYSTEM ===
+• OTP Generation: Highly secure cryptographically safe library (`secrets.randbelow`) utilized over standard pseudo-random generators.
+• Storage Strategy: OTPs NEVER hit the main PostgreSQL database actively. They are stored natively in Redis with a 600-second (10 min) memory expiry (TTL).
+• Brute-Force Protection: Built-in Redis attempt counters (`otp_attempts:{email}`). The OTP is aggressively invalidated after 5 failed tries.
+• Email Delivery: Dispatched natively asynchronously using Python's `smtplib` formatted via `MIMEMultipart` HTML blocks, drastically decreasing external API latencies.
+
+
+=== SLIDE 10: FEATURES LIST ===
+• Official University validation engine (blocks unverified emails).
+• Secure Account creation, Login, Password encryption.
+• Admin Management Panel (Moderate users, override records, soft-delete products).
+• Product Marketplace (Create listing, Search via wildcards, Categorization).
+• Interactive Transactions with Buyer/Seller specific views.
+• Delivery Handshake (Secure physical meetup OTP flow).
+• Intra-transaction Chat Engine.
+• Intelligent Form autofill bridging official data with personal profiles.
+
+
+=== SLIDE 11: UI/UX FEATURES ===
+• Dynamic State Animations: Framer motion dictates `<AnimatePresence>` to smoothly swap out active panels (like the 5-phase registration flow window sliders).
+• Form Interactions: Micro-animations on input focuses. Custom OTP digit-box auto-shifting array inputs.
+• Layout Structure: Completely responsive CSS Grid/Flexbox architecture via Tailwind.
+• Realtime Feedback: Granular contextual alerts (`A 6-digit verification code has been sent... Check inbox`). Rule-indicator chips for password strength highlighting. Dark/Light theme contexts natively.
+
+
+=== SLIDE 12: ISSUES & RISKS ===
+• Hardcoded Admin Risks: The admin credentials (`ADMIN_USERNAME` & `ADMIN_PASSWORD`) bypass database hashing entirely and sit as plaintext in `.env`.
+• Image Handling: Images are stored merely as JSON strings array representations natively in `image_urls`. If base64 strings are submitted instead of CDN links, it heavily bloats the PostgreSQL rows leading to severe degradation.
+• Scalability Risk: Relying entirely on HTTP requests for real-time `ChatMessage` architecture. High-frequency messaging will overload the PostgreSQL pool without WebSockets.
+• SMTP Thread Blocking: Python's `smtplib` process can occasionally block event loops if external mail servers (like Gmail) throttle the connection.
+
+
+=== SLIDE 13: IMPROVEMENTS ===
+• Architecture: Upgrade the intra-transaction chat to utilize FastAPI `WebSockets`, enabling bidirectional asynchronous messaging.
+• Optimizations: Introduce a Media Bucket Service (AWS S3, Cloudinary) to handle file uploads natively. The backend should generate presigned upload URLs rather than handling byte buffering.
+• UI Improvements: Allow users multiple image uploads rendered as a swipeable gallery carousels on the product page.
+• Scalability: Integrate Celery/Redis for robust background task queueing (specifically decoupling email dispatch workflows completely from the main thread).
+
+
+=== SLIDE 14: FINAL SUMMARY ===
+• Overall System Understanding: UNIMART represents a highly structured, defensively-programmed marketplace. It masterfully solves the "trust" issue inherent in second-hand trading platforms by strictly binding accounts to immutable institution-owned registries.
+• Strengths: Phenomenal data normalization and segregation logic between `official_records` and mutable `user_profiles`. Best-in-class, Redis-powered temporary OTP architecture limiting attack vectors. UX is profoundly responsive.
+• Weaknesses: Lacks an integrated cloud-storage pipeline for product media. The static Admin Access-Key format prevents multiple tiered-moderator accounts.
+• Readiness for Deployment: The project is exceptionally capable for Beta deployment within an isolated University Sandbox. Transitioning the `.env` variables safely to a cloud provider and injecting an S3 bucket finishes its production readiness.
+=============================================================
