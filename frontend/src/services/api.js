@@ -37,10 +37,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle auth errors and network errors
+// Response interceptor - handle auth errors, refresh token, and network errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     // Network error (no response from server)
     if (!error.response) {
       console.error('[API] Network error — backend unreachable:', error.message);
@@ -51,11 +51,31 @@ api.interceptors.response.use(
       return Promise.reject(networkError);
     }
 
-    // Auth error — clear tokens and redirect
-    if (error.response.status === 401) {
+    const originalRequest = error.config;
+
+    // Auth error — attempt refresh token, then redirect
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem("unimart_refresh_token");
+        if (refreshToken) {
+          const { data } = await axios.post(
+            `${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/auth/refresh`,
+            { refresh_token: refreshToken }
+          );
+          localStorage.setItem("unimart_token", data.access_token);
+          originalRequest.headers["Authorization"] = `Bearer ${data.access_token}`;
+          return api(originalRequest);
+        }
+      } catch {
+        localStorage.removeItem("unimart_token");
+        localStorage.removeItem("unimart_refresh_token");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+      // No refresh token available
       localStorage.removeItem('unimart_token');
       localStorage.removeItem('unimart_user');
-      // Only redirect if not already on auth pages
       if (!['/login', '/register'].includes(window.location.pathname)) {
         window.location.href = '/login';
       }

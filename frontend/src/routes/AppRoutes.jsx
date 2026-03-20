@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
+import AdminApp from '../admin/AdminApp';
 
 // Pages
 import Landing from '../pages/Landing';
@@ -85,6 +86,9 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Admin Panel — separate sub-application */}
+      <Route path="/admin/*" element={<AdminApp />} />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
