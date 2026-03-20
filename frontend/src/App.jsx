@@ -13,7 +13,13 @@ import AppRoutes from './routes/AppRoutes';
 
 function AppLayout() {
   const location = useLocation();
-  const isAuthPage = ['/', '/login', '/register', '/admin-login'].includes(location.pathname);
+  const isAuthPage = ['/', '/login', '/register'].includes(location.pathname);
+  const isAdminPage = location.pathname.startsWith('/admin');
+
+  // Don't show main app layout (navbar/footer) on admin pages
+  if (isAdminPage) {
+    return <AppRoutes />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

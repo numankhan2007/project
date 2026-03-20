@@ -7,7 +7,6 @@ import Landing from '../pages/Landing';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
-import AdminLogin from '../pages/AdminLogin';
 import ProductPage from '../pages/ProductPage';
 import Dashboard from '../pages/Dashboard';
 import Orders from '../pages/Orders';
@@ -25,7 +24,6 @@ export default function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/terms" element={<TermsAndConditions />} />
       <Route path="/about" element={<AboutUs />} />
 
