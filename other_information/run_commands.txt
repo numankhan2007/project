@@ -1,0 +1,44 @@
+=========================================
+COMMANDS TO RUN THE PROJECT
+=========================================
+
+1. STARTING THE FRONTEND:
+-------------------------
+A. Open a new terminal.
+B. Navigate to the frontend directory:
+   cd d:\CODE\UNIMART\project\frontend
+C. Install dependencies (if not done already):
+   npm install
+D. Run the React development server:
+   npm run dev
+
+The frontend will typically be hosted at http://localhost:5173
+
+2. STARTING THE BACKEND:
+------------------------
+A. Open a new terminal.
+B. Navigate to the backend directory:
+   cd d:\CODE\UNIMART\project\backend
+C. Create/Activate the Virtual Environment (venv):
+   - We have provided an automated script (start.bat) in the root to do this.
+   - Manually on Windows: 
+     venv\Scripts\activate
+D. Install dependencies (if not done already):
+   pip install -r requirements.txt
+E. Run the FastAPI development server using Uvicorn:
+   uvicorn main:app --reload
+
+The backend will typically be hosted at http://localhost:8000
+API Docs: http://localhost:8000/docs
+
+3. STARTING THE DATABASE / SERVICES:
+------------------------------------
+- Ensure PostgreSQL is running on your machine on port 5432.
+- Ensure Redis is running (if locally installed) or handled via WSL on port 6379.
+
+
+======== AUTOMATIC EXECUTION (start.bat) ========
+For convenience, we've provided a batch file at the root of the project to automatically activate environments and start both servers at once.
+
+Just double-click on `start.bat` located inside `d:\CODE\UNIMART\project\start.bat`.
+This automatically connects your virtual environment to the project.

@@ -1,7 +1,9 @@
+import os
 import random
 import re
 import secrets
 import time
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -18,11 +20,28 @@ from redis_client import redis_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+REFRESH_TOKEN_EXPIRE = timedelta(days=7)
+REFRESH_SECRET = os.getenv("REFRESH_TOKEN_SECRET", "change-this-refresh-secret")
+
 OTP_EXPIRY_SECONDS = 600  # 10 minutes
 VERIFIED_EMAIL_EXPIRY = 1800  # 30 minutes — how long a verified email stays valid
 RATE_LIMIT_WINDOW = 900  # 15 minutes
 RATE_LIMIT_MAX_SENDS = 5  # max OTP sends per email per window
 RATE_LIMIT_MAX_ATTEMPTS = 5  # max OTP verify attempts per email
+
+
+def create_refresh_token(register_number: str) -> str:
+    from datetime import datetime, timezone
+    import jwt as pyjwt
+    return pyjwt.encode(
+        {
+            "sub": register_number,
+            "token_type": "refresh",
+            "exp": datetime.now(timezone.utc) + REFRESH_TOKEN_EXPIRE,
+        },
+        REFRESH_SECRET,
+        algorithm="HS256",
+    )
 
 
 class RegistrationOTPRequest(BaseModel):
@@ -258,6 +277,7 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
 
     return {
         "token": token,
+        "refresh_token": create_refresh_token(new_user.register_number),
         "user": {
             "studentId": new_user.register_number,
             "username": new_user.username,
@@ -317,6 +337,7 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
 
     return {
         "token": token,
+        "refresh_token": create_refresh_token(user.register_number),
         "user": {
             "studentId": user.register_number,
             "username": user.username,
@@ -331,6 +352,35 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
             "createdAt": str(user.created_at) if user.created_at else None,
         }
     }
+
+
+# ============================================================
+# POST /auth/refresh — Exchange refresh token for new access token
+# ============================================================
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+@router.post("/refresh")
+async def refresh_access_token(data: RefreshRequest, db: Session = Depends(get_db)):
+    """Exchange a valid refresh token for a new access token."""
+    import jwt as pyjwt
+    try:
+        payload = pyjwt.decode(data.refresh_token, REFRESH_SECRET, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired — please log in again")
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if payload.get("token_type") != "refresh":
+        raise HTTPException(status_code=403, detail="Token type mismatch")
+
+    user = db.query(UserProfile).filter_by(register_number=payload["sub"]).first()
+    if not user or getattr(user, "is_suspended", False):
+        raise HTTPException(status_code=401, detail="User not found or suspended")
+
+    token = create_access_token(data={"sub": user.register_number})
+    return {"access_token": token, "token_type": "bearer"}
 
 
 # ============================================================

@@ -55,7 +55,11 @@ class UserProfile(Base):
     personal_mail_id = Column(String, nullable=False)
     phone_number = Column(String, nullable=True)
     username_change_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at     = Column(DateTime(timezone=True), server_default=func.now())
+    is_suspended   = Column(Boolean, default=False, nullable=False)
+    is_deleted     = Column(Boolean, default=False, nullable=False)
+    deleted_at     = Column(DateTime(timezone=True), nullable=True)
+    deletion_note  = Column(String(500), nullable=True)
 
     # Relationships
     official_record = relationship("OfficialRecord", back_populates="user_profile")
@@ -81,10 +85,12 @@ class Product(Base):
     product_status = Column(String, default=ProductStatus.AVAILABLE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     sold_at = Column(DateTime(timezone=True), nullable=True)
+    is_flagged = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     seller = relationship("UserProfile", back_populates="products")
     orders = relationship("Order", back_populates="product")
+    product_images = relationship("ProductImage", back_populates="product", cascade="all, delete-orphan", order_by="ProductImage.position")
 
 
 # ============================================================
@@ -125,3 +131,17 @@ class ChatMessage(Base):
 
     # Relationships
     order = relationship("Order", back_populates="messages")
+
+
+# ============================================================
+# Product Images
+# ============================================================
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    url        = Column(String(1024), nullable=False)
+    position   = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    product    = relationship("Product", back_populates="product_images")

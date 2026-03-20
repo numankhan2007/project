@@ -9,6 +9,8 @@ from models import UserProfile
 from routers import auth, products, orders, chat, otp, admin
 from scheduler import start_scheduler, stop_scheduler
 from seed_data import seed_official_records
+from admin_auth import seed_super_admin
+from admin_models import AdminAccount, AdminAuditLog
 
 
 # ============================================================
@@ -26,6 +28,18 @@ async def lifespan(app: FastAPI):
         print("Database seeding check completed.")
     except Exception as e:
         print(f"Error during auto-seeding: {e}")
+
+    # Seed super admin account
+    try:
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            seed_super_admin(db)
+        finally:
+            db.close()
+        print("Admin account check completed.")
+    except Exception as e:
+        print(f"Warning: Admin seeding failed: {e}")
         
     print("Unimart API is ready!")
     yield
@@ -50,7 +64,9 @@ app = FastAPI(
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",                    # Local Vite dev server
+    "http://127.0.0.1:5173",                    # Local Vite dev server (IP)
     "http://localhost:3000",                    # Alternative local dev
+    "http://127.0.0.1:3000",                    # Alternative local dev (IP)
 ]
 
 app.add_middleware(
