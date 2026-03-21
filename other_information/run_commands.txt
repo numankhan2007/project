@@ -6,7 +6,14 @@ COMMANDS TO RUN THE PROJECT
 -----------------------------------
 Run these commands to pull the latest changes from the main branch before starting the project.
 
-A. Open a new terminal (Git Bash, PowerShell, or Command Prompt).
+LATEST UPDATES (as of most recent commit):
+  - fix: restore Landing page with 3D animated PC games background
+  - feat: update local changes for seed data, orders, landing, and login pages
+  - feat: hacker-style admin UI, Marvel intro animation, and landing page overhaul
+  These changes were merged via pull requests #8 and #9 on GitHub.
+
+A. Open a new terminal (Git Bash, PowerShell, or Command Prompt) in VS Code
+   (use View > Terminal or press Ctrl+` to open the integrated terminal).
 B. Navigate to the project root directory (replace with your actual path):
    cd d:\CODE\UNIMART\project
 C. Pull the latest changes from GitHub main branch:
