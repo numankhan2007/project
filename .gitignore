@@ -54,3 +54,4 @@ git_status_utf8.txt
 
 # Prompt/script files (may contain sensitive info)
 PROMPT/
+frontend/dist

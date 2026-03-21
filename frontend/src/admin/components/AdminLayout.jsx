@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LayoutDashboard, Users, Package, ShoppingCart, Shield, LogOut } from "lucide-react";
 import { tokens } from "../styles/tokens";
 import { useAdminAuth } from "../AdminAuthContext";
+import "../pages/admin.css";
 
 const NAV = [
-  { id: "dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard",  path: "/admin" },
-  { id: "users",     icon: <Users size={18} />,           label: "Users",       path: "/admin/users" },
-  { id: "products",  icon: <Package size={18} />,         label: "Products",    path: "/admin/products" },
-  { id: "orders",    icon: <ShoppingCart size={18} />,    label: "Orders",      path: "/admin/orders" },
-  { id: "audit",     icon: <Shield size={18} />,          label: "Audit Logs",  path: "/admin/audit" },
+  { id: "dashboard", icon: <LayoutDashboard size={16} />, label: "DASHBOARD",  path: "/admin" },
+  { id: "users",     icon: <Users size={16} />,           label: "USERS",       path: "/admin/users" },
+  { id: "products",  icon: <Package size={16} />,         label: "PRODUCTS",    path: "/admin/products" },
+  { id: "orders",    icon: <ShoppingCart size={16} />,    label: "ORDERS",      path: "/admin/orders" },
+  { id: "audit",     icon: <Shield size={16} />,          label: "AUDIT LOGS",  path: "/admin/audit" },
 ];
 
 export default function AdminLayout() {
@@ -24,6 +25,9 @@ export default function AdminLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: tokens.bg, fontFamily: tokens.fontBody }}>
+      {/* Scanlines overlay */}
+      <div className="admin-scanlines" />
+
       {/* Sidebar */}
       <aside style={{
         width: 220,
@@ -36,15 +40,30 @@ export default function AdminLayout() {
         top: 0,
         height: "100vh",
         flexShrink: 0,
+        zIndex: 10,
       }}>
         {/* Brand */}
         <div style={{ padding: "0 20px", marginBottom: 32 }}>
-          <div style={{ fontFamily: tokens.fontDisplay, fontSize: 18, fontWeight: 800, color: tokens.textPrimary }}>
+          <div style={{
+            fontFamily: tokens.fontDisplay,
+            fontSize: 20,
+            fontWeight: 800,
+            color: tokens.primary,
+            letterSpacing: "0.2em",
+            textShadow: "0 0 12px rgba(0,255,65,0.6)",
+          }}>
             UNIMART
           </div>
-          <div style={{ fontSize: 10, color: tokens.textMuted, letterSpacing: "0.15em", marginTop: 2 }}>
+          <div style={{
+            fontSize: 9,
+            color: "#ff0033",
+            letterSpacing: "0.3em",
+            marginTop: 2,
+            textShadow: "0 0 8px rgba(255,0,51,0.6)",
+          }}>
             ADMIN PANEL
           </div>
+          <div style={{ width: "100%", height: 1, background: tokens.border, marginTop: 12 }} />
         </div>
 
         {/* Nav */}
@@ -58,7 +77,7 @@ export default function AdminLayout() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.07, type: "spring", stiffness: 200, damping: 20 }}
-                style={{ position: "relative", marginBottom: 4 }}
+                style={{ position: "relative", marginBottom: 2 }}
               >
                 {isActive && (
                   <motion.div
@@ -68,9 +87,9 @@ export default function AdminLayout() {
                       left: 0,
                       top: 0,
                       bottom: 0,
-                      width: 3,
+                      width: 2,
                       background: tokens.primary,
-                      borderRadius: tokens.radius.pill,
+                      boxShadow: "0 0 8px rgba(0,255,65,0.8)",
                     }}
                   />
                 )}
@@ -80,17 +99,29 @@ export default function AdminLayout() {
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "10px 12px 10px 16px",
-                    borderRadius: tokens.radius.md,
-                    color: isActive ? tokens.textPrimary : tokens.textSecondary,
-                    background: isActive ? tokens.surfaceHover : "transparent",
+                    padding: "9px 12px 9px 16px",
+                    borderRadius: "2px",
+                    color: isActive ? tokens.primary : tokens.textSecondary,
+                    background: isActive ? "rgba(0,255,65,0.06)" : "transparent",
                     textDecoration: "none",
-                    fontSize: 14,
-                    fontWeight: isActive ? 500 : 400,
+                    fontSize: 11,
+                    fontWeight: isActive ? 700 : 400,
+                    letterSpacing: "0.12em",
                     transition: "all 0.15s",
+                    textShadow: isActive ? "0 0 8px rgba(0,255,65,0.6)" : "none",
                   }}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = tokens.surfaceHover; e.currentTarget.style.color = tokens.textPrimary; e.currentTarget.style.paddingLeft = "18px"; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = tokens.textSecondary; e.currentTarget.style.paddingLeft = "16px"; } }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "rgba(0,255,65,0.04)";
+                      e.currentTarget.style.color = tokens.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = tokens.textSecondary;
+                    }
+                  }}
                 >
                   {item.icon}
                   {item.label}
@@ -104,8 +135,8 @@ export default function AdminLayout() {
         <div style={{ padding: "16px 20px", borderTop: `1px solid ${tokens.border}` }}>
           {admin && (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, color: tokens.textPrimary, fontWeight: 500 }}>{admin.displayName}</div>
-              <div style={{ fontSize: 11, color: tokens.textMuted, fontFamily: tokens.fontMono }}>{admin.username}</div>
+              <div style={{ fontSize: 11, color: tokens.primary, fontWeight: 700, letterSpacing: "0.1em" }}>{admin.displayName?.toUpperCase()}</div>
+              <div style={{ fontSize: 10, color: tokens.textMuted, letterSpacing: "0.1em", marginTop: 2 }}>@{admin.username}</div>
             </div>
           )}
           <button
@@ -115,27 +146,36 @@ export default function AdminLayout() {
               alignItems: "center",
               gap: 8,
               background: "none",
-              border: `1px solid ${tokens.border}`,
-              borderRadius: tokens.radius.md,
+              border: "1px solid #003d0c",
+              borderRadius: "2px",
               color: tokens.textSecondary,
-              fontSize: 13,
+              fontSize: 10,
               cursor: "pointer",
-              padding: "8px 12px",
+              padding: "7px 12px",
               width: "100%",
               fontFamily: tokens.fontBody,
+              letterSpacing: "0.15em",
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = tokens.danger; e.currentTarget.style.color = tokens.danger; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = tokens.border; e.currentTarget.style.color = tokens.textSecondary; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#ff0033";
+              e.currentTarget.style.color = "#ff0033";
+              e.currentTarget.style.textShadow = "0 0 8px rgba(255,0,51,0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#003d0c";
+              e.currentTarget.style.color = tokens.textSecondary;
+              e.currentTarget.style.textShadow = "none";
+            }}
           >
-            <LogOut size={14} />
-            Sign Out
+            <LogOut size={12} />
+            DISCONNECT
           </button>
         </div>
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, overflow: "auto", padding: 32 }}>
+      <main style={{ flex: 1, overflow: "auto", padding: 32, position: "relative", zIndex: 5 }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -150,3 +190,4 @@ export default function AdminLayout() {
     </div>
   );
 }
+
