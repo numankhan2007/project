@@ -38,6 +38,7 @@ export default function Orders() {
     { key: "id", label: "ORDER", render: (r) => <span style={{ fontFamily: tokens.fontMono, fontSize: 12 }}>#{r.id}</span> },
     { key: "product_title", label: "PRODUCT" },
     { key: "buyer_register_number", label: "BUYER", render: (r) => <span style={{ fontFamily: tokens.fontMono, fontSize: 11 }}>{r.buyer_register_number}</span> },
+    { key: "seller_register_number", label: "SELLER", render: (r) => <span style={{ fontFamily: tokens.fontMono, fontSize: 11 }}>{r.seller_register_number}</span> },
     { key: "order_status", label: "STATUS", render: (r) => <StatusBadge status={r.order_status} /> },
     { key: "created_at", label: "CREATED", render: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "—" },
     { key: "actions", label: "ACTIONS", render: (r) => (

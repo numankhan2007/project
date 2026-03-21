@@ -72,7 +72,7 @@ export default function Login() {
             <Input
               label="Register Number or Username"
               name="identifier"
-              placeholder="e.g. 20124UBCA081 or your_username"
+              placeholder="Enter your register number or username"
               value={formData.identifier}
               onChange={(e) => {
                 setFormData({ ...formData, identifier: e.target.value });

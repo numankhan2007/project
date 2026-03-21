@@ -9,9 +9,10 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from database import engine, SessionLocal, Base
 from models import OfficialRecord
+from admin_models import AdminAccount, AdminAuditLog
 import csv
 
-# Create all tables in the database
+# Create all tables in the database (includes admin tables)
 Base.metadata.create_all(bind=engine)
 
 
