@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
+// ── Landing page video background ─────────────────────────────────────────
+// Set to a publicly accessible .mp4 / .webm URL, or leave empty ("") to
+// fall back to the existing gradient + floating game-title animation.
+const VIDEO_SRC = "";
+
 const PC_GAMES = [
   "COUNTER-STRIKE 2", "CYBERPUNK 2077", "ELDEN RING", "VALORANT",
   "MINECRAFT", "GTA V", "RED DEAD REDEMPTION 2", "WITCHER 3",
@@ -68,6 +73,42 @@ function GameBackground() {
         </motion.div>
       ))}
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Full-screen video background
+// ──────────────────────────────────────────────
+function VideoBackground({ videoRef }) {
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [fallback, setFallback] = useState(!VIDEO_SRC);
+
+  if (fallback) return null;
+
+  return (
+    <>
+      <video
+        ref={videoRef}
+        src={VIDEO_SRC}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onCanPlay={() => setVideoLoaded(true)}
+        onError={() => setFallback(true)}
+        style={{
+          position: "fixed", inset: 0, width: "100%", height: "100%",
+          objectFit: "cover", zIndex: 0, pointerEvents: "none",
+          opacity: videoLoaded ? 1 : 0,
+          transition: "opacity 0.8s ease",
+        }}
+      />
+      {/* Dark overlay to keep text readable over the video */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: "rgba(0,0,0,0.55)",
+      }} />
+    </>
   );
 }
 
@@ -214,6 +255,28 @@ function MarvelIntro({ onDone }) {
           ))}
         </div>
       )}
+
+      {/* Skip intro button */}
+      <button
+        onClick={onDone}
+        style={{
+          position: "absolute", bottom: 24, right: 24,
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          color: "#94a3b8",
+          borderRadius: 8,
+          padding: "6px 14px",
+          fontSize: 12,
+          cursor: "pointer",
+          fontFamily: "'Inter', sans-serif",
+          letterSpacing: "0.05em",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+      >
+        Skip
+      </button>
     </motion.div>
   );
 }
@@ -227,14 +290,39 @@ export default function Landing() {
   const [introShown, setIntroShown] = useState(() => {
     return sessionStorage.getItem("unimart_intro_shown") === "true";
   });
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoActive, setVideoActive] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/home');
   }, [isAuthenticated, navigate]);
 
+  // Track whether the video is actually playing (non-empty src + loaded successfully)
+  useEffect(() => {
+    if (!VIDEO_SRC) return;
+    const el = videoRef.current;
+    if (!el) return;
+    const onCanPlay = () => setVideoActive(true);
+    const onError = () => setVideoActive(false);
+    el.addEventListener("canplay", onCanPlay);
+    el.addEventListener("error", onError);
+    return () => {
+      el.removeEventListener("canplay", onCanPlay);
+      el.removeEventListener("error", onError);
+    };
+  }, []);
+
   const handleIntroDone = () => {
     sessionStorage.setItem("unimart_intro_shown", "true");
     setIntroShown(true);
+  };
+
+  const toggleMute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = !el.muted;
+    setIsMuted(el.muted);
   };
 
   return (
@@ -246,6 +334,9 @@ export default function Landing() {
 
       <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
         style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)" }}>
+
+        {/* Full-screen video background (renders null when VIDEO_SRC is empty or video errors) */}
+        <VideoBackground videoRef={videoRef} />
 
         {/* 3-D game titles floating in background */}
         <GameBackground />
@@ -340,6 +431,30 @@ export default function Landing() {
           © 2026 Unimart — Built for students, by students.
         </motion.p>
       </div>
+
+      {/* Mute / unmute toggle — only rendered when a video is actively playing */}
+      {VIDEO_SRC && videoActive && (
+        <button
+          onClick={toggleMute}
+          title={isMuted ? "Unmute video" : "Mute video"}
+          style={{
+            position: "fixed", bottom: 72, right: 24, zIndex: 20,
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: "#e2e8f0",
+            borderRadius: 999,
+            width: 40, height: 40,
+            cursor: "pointer",
+            fontSize: 18,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.16)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
+      )}
     </>
   );
 }
