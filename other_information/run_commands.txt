@@ -11,6 +11,7 @@ LATEST UPDATES (as of most recent commit):
   - feat: update local changes for seed data, orders, landing, and login pages
   - feat: hacker-style admin UI, Marvel intro animation, and landing page overhaul
   These changes were merged via pull requests #8 and #9 on GitHub.
+  - merge: current branch merged with main branch (all changes are now in sync).
 
 A. Open a new terminal (Git Bash, PowerShell, or Command Prompt) in VS Code
    (use View > Terminal or press Ctrl+` to open the integrated terminal).
