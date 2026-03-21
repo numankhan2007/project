@@ -3,11 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
+// ── Landing page video background ─────────────────────────────────────────
+// Set to a publicly accessible .mp4 / .webm URL, or leave empty ("") to
+// fall back to the existing gradient + floating game-title animation.
+const VIDEO_SRC = "";
+
 const PC_GAMES = [
   "COUNTER-STRIKE 2", "CYBERPUNK 2077", "ELDEN RING", "VALORANT",
   "MINECRAFT", "GTA V", "RED DEAD REDEMPTION 2", "WITCHER 3",
   "HALF-LIFE: ALYX", "APEX LEGENDS", "FORTNITE", "BALDUR'S GATE 3",
   "STARFIELD", "DOOM ETERNAL", "PORTAL 2", "SEKIRO",
+];
+
+// ── Feature cards data ─────────────────────────────────────────────────────
+const FEATURES = [
+  {
+    icon: "🎓",
+    title: "Verified Students Only",
+    description:
+      "Only students in the official university registry can register. Every buyer and seller is a confirmed peer.",
+  },
+  {
+    icon: "🤝",
+    title: "OTP-Secured Deliveries",
+    description:
+      "Every delivery uses a physical OTP handshake. The buyer confirms receipt before the transaction completes.",
+  },
+  {
+    icon: "📚",
+    title: "Campus Marketplace",
+    description:
+      "Textbooks, electronics, lab equipment, and notes — everything you need for university life, traded on campus.",
+  },
+  {
+    icon: "🔒",
+    title: "Trust-First Ecosystem",
+    description:
+      "A closed, invite-only marketplace. No anonymous sellers. No unverified buyers. Safety by design.",
+  },
 ];
 
 // ──────────────────────────────────────────────
@@ -68,6 +101,42 @@ function GameBackground() {
         </motion.div>
       ))}
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Full-screen video background
+// ──────────────────────────────────────────────
+function VideoBackground({ videoRef }) {
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [fallback, setFallback] = useState(!VIDEO_SRC);
+
+  if (fallback) return null;
+
+  return (
+    <>
+      <video
+        ref={videoRef}
+        src={VIDEO_SRC}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onCanPlay={() => setVideoLoaded(true)}
+        onError={() => setFallback(true)}
+        style={{
+          position: "fixed", inset: 0, width: "100%", height: "100%",
+          objectFit: "cover", zIndex: 0, pointerEvents: "none",
+          opacity: videoLoaded ? 1 : 0,
+          transition: "opacity 0.8s ease",
+        }}
+      />
+      {/* Dark overlay to keep text readable over the video */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: "rgba(0,0,0,0.55)",
+      }} />
+    </>
   );
 }
 
@@ -167,7 +236,7 @@ function MarvelIntro({ onDone }) {
             animate={{ scaleX: 1, scaleY: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.05 }}
             style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Syne', sans-serif",
               fontSize: "clamp(52px, 12vw, 120px)",
               fontWeight: 900,
               color: "#fff",
@@ -184,7 +253,7 @@ function MarvelIntro({ onDone }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
             style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'DM Sans', sans-serif",
               fontSize: "clamp(12px, 2vw, 18px)",
               fontWeight: 600,
               color: "#a78bfa",
@@ -214,6 +283,80 @@ function MarvelIntro({ onDone }) {
           ))}
         </div>
       )}
+
+      {/* Skip intro button */}
+      <button
+        onClick={onDone}
+        style={{
+          position: "absolute", bottom: 24, right: 24,
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          color: "#94a3b8",
+          borderRadius: 8,
+          padding: "6px 14px",
+          fontSize: 12,
+          cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: "0.05em",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+      >
+        Skip
+      </button>
+    </motion.div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Feature card (used in features section)
+// ──────────────────────────────────────────────
+function FeatureCard({ icon, title, description, index }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
+      whileHover={{ y: -6 }}
+      style={{
+        background: "rgba(20,23,32,0.85)",
+        border: "1px solid #1e2333",
+        borderRadius: 16,
+        padding: "28px 24px",
+        cursor: "default",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "rgba(99,102,241,0.45)";
+        e.currentTarget.style.boxShadow = "0 8px 40px rgba(99,102,241,0.18)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "#1e2333";
+        e.currentTarget.style.boxShadow = "none";
+      }}
+    >
+      <div style={{ fontSize: 38, marginBottom: 16, lineHeight: 1 }}>{icon}</div>
+      <h3 style={{
+        color: "#edf0f7",
+        fontFamily: "'Syne', sans-serif",
+        fontSize: 17,
+        fontWeight: 700,
+        marginBottom: 10,
+        letterSpacing: "0.01em",
+      }}>
+        {title}
+      </h3>
+      <p style={{
+        color: "#7c88a3",
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 14,
+        lineHeight: 1.65,
+        margin: 0,
+      }}>
+        {description}
+      </p>
     </motion.div>
   );
 }
@@ -227,14 +370,39 @@ export default function Landing() {
   const [introShown, setIntroShown] = useState(() => {
     return sessionStorage.getItem("unimart_intro_shown") === "true";
   });
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoActive, setVideoActive] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/home');
   }, [isAuthenticated, navigate]);
 
+  // Track whether the video is actually playing (non-empty src + loaded successfully)
+  useEffect(() => {
+    if (!VIDEO_SRC) return;
+    const el = videoRef.current;
+    if (!el) return;
+    const onCanPlay = () => setVideoActive(true);
+    const onError = () => setVideoActive(false);
+    el.addEventListener("canplay", onCanPlay);
+    el.addEventListener("error", onError);
+    return () => {
+      el.removeEventListener("canplay", onCanPlay);
+      el.removeEventListener("error", onError);
+    };
+  }, []);
+
   const handleIntroDone = () => {
     sessionStorage.setItem("unimart_intro_shown", "true");
     setIntroShown(true);
+  };
+
+  const toggleMute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = !el.muted;
+    setIsMuted(el.muted);
   };
 
   return (
@@ -244,8 +412,13 @@ export default function Landing() {
         {!introShown && <MarvelIntro key="intro" onDone={handleIntroDone} />}
       </AnimatePresence>
 
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)" }}>
+      {/* ── Hero Section ─────────────────────────────────────── */}
+      <div
+        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)" }}
+      >
+        {/* Full-screen video background (renders null when VIDEO_SRC is empty or video errors) */}
+        <VideoBackground videoRef={videoRef} />
 
         {/* 3-D game titles floating in background */}
         <GameBackground />
@@ -272,14 +445,17 @@ export default function Landing() {
           className="relative text-center px-6 max-w-2xl"
           style={{ zIndex: 2 }}
         >
-          {/* UNIMART centered, no cap emoji */}
+          {/* UNIMART heading — Syne font for brand authority */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-6"
           >
-            <span className="text-6xl sm:text-7xl font-extrabold gradient-text tracking-tight">
+            <span
+              className="text-6xl sm:text-7xl font-extrabold gradient-text tracking-tight"
+              style={{ fontFamily: "'Syne', sans-serif" }}
+            >
               UNIMART
             </span>
           </motion.div>
@@ -304,43 +480,158 @@ export default function Landing() {
             Verified students only. Safe transactions with OTP-secured deliveries.
           </motion.p>
 
-          {/* Buttons — icons only, no text */}
+          {/* CTA Buttons — motion.button for whileHover/whileTap */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <button
+            <motion.button
               onClick={() => navigate('/login')}
-              className="btn-primary text-lg px-12 py-4 rounded-2xl shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300"
+              className="btn-primary text-lg px-12 py-4 rounded-2xl"
               title="User Login"
+              whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(99,102,241,0.4)" }}
+              whileTap={{ scale: 0.95 }}
+              style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.25)" }}
             >
               🔐
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               onClick={() => navigate('/admin/login')}
-              className="btn-secondary text-lg px-12 py-4 rounded-2xl border-gray-600 text-gray-200 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+              className="text-lg px-12 py-4 rounded-2xl border text-gray-200 backdrop-blur-sm"
               title="Admin Login"
+              whileHover={{ scale: 1.05, background: "rgba(255,255,255,0.12)" }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
             >
               ⚙️
-            </button>
+            </motion.button>
+          </motion.div>
+
+          {/* Scroll hint */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.8, duration: 0.6 }}
+            style={{ marginTop: 48, color: "#404c65" }}
+          >
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              style={{ fontSize: 20 }}
+            >
+              ↓
+            </motion.div>
           </motion.div>
         </motion.div>
-
-        {/* Footer */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="absolute bottom-6 text-gray-500 text-xs"
-          style={{ zIndex: 2 }}
-        >
-          © 2026 Unimart — Built for students, by students.
-        </motion.p>
       </div>
+
+      {/* ── Features Section ─────────────────────────────────── */}
+      <div style={{
+        background: "linear-gradient(180deg, #0f172a 0%, #0a0c12 100%)",
+        padding: "80px 24px 72px",
+      }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+
+          {/* Section label + heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            style={{ textAlign: "center", marginBottom: 56 }}
+          >
+            <p style={{
+              color: "#6366f1",
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              marginBottom: 14,
+            }}>
+              WHY UNIMART
+            </p>
+            <h2 style={{
+              color: "#edf0f7",
+              fontFamily: "'Syne', sans-serif",
+              fontSize: "clamp(26px, 4vw, 40px)",
+              fontWeight: 800,
+              letterSpacing: "0.01em",
+              lineHeight: 1.2,
+              marginBottom: 14,
+            }}>
+              Built for University Students
+            </h2>
+            <p style={{
+              color: "#7c88a3",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 16,
+              maxWidth: 480,
+              margin: "0 auto",
+              lineHeight: 1.6,
+            }}>
+              A closed-ecosystem marketplace where every buyer and seller is a verified student from your campus.
+            </p>
+          </motion.div>
+
+          {/* Feature cards grid */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+            gap: 24,
+          }}>
+            {FEATURES.map((f, i) => (
+              <FeatureCard key={f.title} {...f} index={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Footer ───────────────────────────────────────────── */}
+      <div style={{
+        background: "#0a0c12",
+        borderTop: "1px solid #1e2333",
+        padding: "24px 16px",
+        textAlign: "center",
+      }}>
+        <p style={{
+          color: "#404c65",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 12,
+          margin: 0,
+        }}>
+          © 2026 Unimart — Built for students, by students.
+        </p>
+      </div>
+
+      {/* Mute / unmute toggle — only rendered when a video is actively playing */}
+      {VIDEO_SRC && videoActive && (
+        <motion.button
+          onClick={toggleMute}
+          title={isMuted ? "Unmute video" : "Mute video"}
+          whileHover={{ background: "rgba(255,255,255,0.16)" }}
+          whileTap={{ scale: 0.9 }}
+          style={{
+            position: "fixed", bottom: 72, right: 24, zIndex: 20,
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: "#e2e8f0",
+            borderRadius: 999,
+            width: 40, height: 40,
+            cursor: "pointer",
+            fontSize: 18,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </motion.button>
+      )}
     </>
   );
 }
-

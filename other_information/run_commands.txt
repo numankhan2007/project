@@ -12,6 +12,10 @@ LATEST UPDATES (as of most recent commit):
   - feat: hacker-style admin UI, Marvel intro animation, and landing page overhaul
   These changes were merged via pull requests #8 and #9 on GitHub.
   - merge: current branch merged with main branch (all changes are now in sync).
+  - feat: landing page cinematic video background with VideoBackground component
+    (full-screen autoplay/muted/loop video, dark overlay, graceful fallback to gradient)
+  These changes were merged via pull request #12 on GitHub.
+  - merge: synced with commit b22189d from main (PR #16).
 
 A. Open a new terminal (Git Bash, PowerShell, or Command Prompt) in VS Code
    (use View > Terminal or press Ctrl+` to open the integrated terminal).
