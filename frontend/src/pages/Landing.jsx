@@ -1,637 +1,218 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
+/**
+ * UNIMART Landing.jsx v6.0
+ * - Pitch black background
+ * - Rainbow tube cursor (landing page only)
+ * - No Marvel intro — loads directly to main content
+ * - RGB glow cycling animation on title (rainbow spectrum)
+ * - Social icon footer (Telegram, Mail, YouTube, Facebook, Twitter, GitLab)
+ * - All cards & buttons: fully transparent, outline only
+ */
 
-// ── Landing page video background ─────────────────────────────────────────
-// Set to a publicly accessible .mp4 / .webm URL, or leave empty ("") to
-// fall back to the existing gradient + floating game-title animation.
-const VIDEO_SRC = "";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { initTubesCursor, destroyTubesCursor } from "../components/TubesCursor.js";
+import "./landing.css";
 
-const PC_GAMES = [
-  "COUNTER-STRIKE 2", "CYBERPUNK 2077", "ELDEN RING", "VALORANT",
-  "MINECRAFT", "GTA V", "RED DEAD REDEMPTION 2", "WITCHER 3",
-  "HALF-LIFE: ALYX", "APEX LEGENDS", "FORTNITE", "BALDUR'S GATE 3",
-  "STARFIELD", "DOOM ETERNAL", "PORTAL 2", "SEKIRO",
+// -- UPDATE THESE HREFS WITH YOUR ACTUAL LINKS --
+const SOCIAL_LINKS = [
+  {
+    label: "Telegram",
+    href: "https://t.me/your_channel",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.88 13.376l-2.967-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.183z"/></svg>,
+  },
+  {
+    label: "Email",
+    href: "mailto:unimart@yourdomain.com",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>,
+  },
+  {
+    label: "YouTube",
+    href: "https://youtube.com/@yourchannel",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>,
+  },
+  {
+    label: "Facebook",
+    href: "https://facebook.com/yourpage",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>,
+  },
+  {
+    label: "Twitter",
+    href: "https://twitter.com/yourhandle",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
+  },
+  {
+    label: "GitLab",
+    href: "https://gitlab.com/yourgroup",
+    icon: <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z"/></svg>,
+  },
 ];
 
-// ── Feature cards data ─────────────────────────────────────────────────────
-const FEATURES = [
-  {
-    icon: "🎓",
-    title: "Verified Students Only",
-    description:
-      "Only students in the official university registry can register. Every buyer and seller is a confirmed peer.",
-  },
-  {
-    icon: "🤝",
-    title: "OTP-Secured Deliveries",
-    description:
-      "Every delivery uses a physical OTP handshake. The buyer confirms receipt before the transaction completes.",
-  },
-  {
-    icon: "📚",
-    title: "Campus Marketplace",
-    description:
-      "Textbooks, electronics, lab equipment, and notes — everything you need for university life, traded on campus.",
-  },
-  {
-    icon: "🔒",
-    title: "Trust-First Ecosystem",
-    description:
-      "A closed, invite-only marketplace. No anonymous sellers. No unverified buyers. Safety by design.",
-  },
+const FEATURE_CARDS = [
+  { icon: "🎓", title: "Verified Students Only",   desc: "Only students in the official university registry can register. Every buyer and seller is a confirmed peer." },
+  { icon: "🔐", title: "OTP-Secured Deliveries",   desc: "Every delivery uses a physical OTP handshake. The buyer confirms receipt before the transaction completes." },
+  { icon: "🏪", title: "Campus Marketplace",       desc: "Textbooks, electronics, lab equipment, and notes — everything you need for university life, traded on campus." },
+  { icon: "🔒", title: "Trust-First Ecosystem",    desc: "A closed, invite-only marketplace. No anonymous sellers. No unverified buyers. Safety by design." },
 ];
 
-// ──────────────────────────────────────────────
-// 3-D floating game titles background
-// ──────────────────────────────────────────────
-function GameBackground() {
-  const tiles = useRef([]);
-  if (tiles.current.length === 0) {
-    for (let i = 0; i < 28; i++) {
-      tiles.current.push({
-        id: i,
-        game: PC_GAMES[i % PC_GAMES.length],
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        z: Math.random() * 400 - 200,
-        duration: 12 + Math.random() * 18,
-        delay: Math.random() * -20,
-        opacity: 0.06 + Math.random() * 0.12,
-        size: 11 + Math.random() * 10,
-        rotate: Math.random() * 30 - 15,
-      });
-    }
-  }
-
+// -- TUBE CURSOR CANVAS --
+function TubeCanvas() {
+  const ref = useRef(null);
+  useEffect(() => {
+    initTubesCursor(ref.current);
+    return () => destroyTubesCursor();
+  }, []);
   return (
-    <div style={{
-      position: "fixed", inset: 0, overflow: "hidden",
-      perspective: "900px", pointerEvents: "none", zIndex: 0,
-    }}>
-      {tiles.current.map((t) => (
-        <motion.div
-          key={t.id}
-          initial={{ opacity: 0, z: t.z, x: `${t.x}vw`, y: `${t.y}vh`, rotate: t.rotate }}
-          animate={{
-            opacity: [0, t.opacity, t.opacity, 0],
-            y: [`${t.y}vh`, `${t.y - 25}vh`],
-            z: [t.z, t.z + 180],
-          }}
-          transition={{
-            duration: t.duration,
-            delay: t.delay,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          style={{
-            position: "absolute",
-            fontFamily: "'Inter', sans-serif",
-            fontSize: t.size,
-            fontWeight: 700,
-            color: "#ffffff",
-            whiteSpace: "nowrap",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            transformStyle: "preserve-3d",
-          }}
-        >
-          {t.game}
-        </motion.div>
+    <canvas ref={ref} style={{
+      position: "fixed", inset: 0,
+      width: "100%", height: "100%",
+      zIndex: 0, pointerEvents: "none", display: "block",
+    }} />
+  );
+}
+
+// -- PORTAL BUTTON — transparent, outline + glow only --
+function PortalButton({ label, icon, sublabel, color, onClick, animDelay="0s" }) {
+  const [ring, setRing] = useState(false);
+  return (
+    <button className="lnd-portal-btn" onClick={onClick}
+      onMouseEnter={() => setRing(true)} onMouseLeave={() => setRing(false)}
+      style={{
+        "--pc": color, "--pc-dim": `${color}22`,
+        position:"relative",
+        width:"clamp(140px,18vw,210px)", height:"clamp(140px,18vw,210px)",
+        borderRadius:16, border:`2px solid ${color}88`,
+        background:"transparent",
+        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:7,
+        animation:`lnd-portal-glow 3s ease-in-out ${animDelay} infinite, lnd-fade-up 0.6s ease ${animDelay} both`,
+        backdropFilter:"blur(2px)", overflow:"visible",
+      }}>
+      {ring && <div style={{ position:"absolute",inset:-10,borderRadius:24, border:`2px solid ${color}44`, animation:"lnd-ring 0.85s ease-out infinite", pointerEvents:"none" }} />}
+      {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h]) => (
+        <div key={`${v}${h}`} style={{ position:"absolute",[v]:9,[h]:9,width:15,height:15, borderTop:v==="top"?`2px solid ${color}`:"none", borderBottom:v==="bottom"?`2px solid ${color}`:"none", borderLeft:h==="left"?`2px solid ${color}`:"none", borderRight:h==="right"?`2px solid ${color}`:"none" }} />
       ))}
+      <span style={{ fontFamily:"'Orbitron',sans-serif",fontWeight:900,fontSize:"clamp(16px,2.6vw,25px)",color:"#fff",letterSpacing:"0.1em",textShadow:`0 0 14px ${color},0 0 32px ${color}88` }}>{label}</span>
+      <span style={{ fontSize:"clamp(26px,3.8vw,44px)",animation:"lnd-icon-float 2.4s ease-in-out infinite",filter:`drop-shadow(0 0 10px ${color})` }}>{icon}</span>
+      <span style={{ fontFamily:"'Share Tech Mono',monospace",fontSize:"clamp(8px,0.95vw,11px)",color:`${color}bb`,letterSpacing:"0.17em",textTransform:"uppercase" }}>{sublabel}</span>
+      <div className="lnd-scanlines" style={{ position:"absolute",inset:0,borderRadius:14 }} />
+    </button>
+  );
+}
+
+// -- FEATURE CARD — transparent, border outline only --
+function FeatureCard({ icon, title, desc, animDelay="0s" }) {
+  return (
+    <div className="lnd-card" style={{ flex:"1 1 0",minWidth:200, borderRadius:14,padding:"24px 20px", display:"flex",flexDirection:"column",gap:12, animation:`lnd-card-in 0.55s ease ${animDelay} both` }}>
+      <div style={{ width:48,height:48, background:"transparent", border:"1px solid rgba(255,255,255,0.22)", borderRadius:12, display:"flex",alignItems:"center",justifyContent:"center",fontSize:24 }}>{icon}</div>
+      <div style={{ fontFamily:"'Rajdhani',sans-serif",fontWeight:700,fontSize:"clamp(15px,1.8vw,18px)",color:"#fff",lineHeight:1.25 }}>{title}</div>
+      <div style={{ fontFamily:"'Rajdhani',sans-serif",fontWeight:400,fontSize:"clamp(13px,1.4vw,15px)",color:"rgba(255,255,255,0.52)",lineHeight:1.65 }}>{desc}</div>
     </div>
   );
 }
 
-// ──────────────────────────────────────────────
-// Full-screen video background
-// ──────────────────────────────────────────────
-function VideoBackground({ videoRef }) {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [fallback, setFallback] = useState(!VIDEO_SRC);
-
-  if (fallback) return null;
-
+// -- SOCIAL FOOTER --
+function SocialFooter() {
   return (
-    <>
-      <video
-        ref={videoRef}
-        src={VIDEO_SRC}
-        autoPlay
-        muted
-        loop
-        playsInline
-        onCanPlay={() => setVideoLoaded(true)}
-        onError={() => setFallback(true)}
-        style={{
-          position: "fixed", inset: 0, width: "100%", height: "100%",
-          objectFit: "cover", zIndex: 0, pointerEvents: "none",
-          opacity: videoLoaded ? 1 : 0,
-          transition: "opacity 0.8s ease",
-        }}
-      />
-      {/* Dark overlay to keep text readable over the video */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "rgba(0,0,0,0.55)",
-      }} />
-    </>
+    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:14, animation:"lnd-fade-up 0.7s ease 0.4s both" }}>
+      <div className="lnd-social-row" style={{ display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center" }}>
+        {SOCIAL_LINKS.map(({ label, href, icon }, i) => (
+          <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+            className="lnd-social-btn" title={label}
+            style={{
+              width:46,height:46,borderRadius:12,
+              background:"transparent",
+              border:"1px solid rgba(0,212,255,0.38)",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              color:"rgba(0,212,255,0.82)", textDecoration:"none",
+              animation:`lnd-social-in 0.4s cubic-bezier(0.34,1.4,0.64,1) ${1.2+i*0.07}s both`,
+            }}>{icon}</a>
+        ))}
+      </div>
+      <div style={{ fontFamily:"'Share Tech Mono',monospace",fontSize:"clamp(9px,1vw,11px)",color:"rgba(255,255,255,0.18)",letterSpacing:"0.14em",textAlign:"center" }}>
+        © 2026 UNIMART. ALL RIGHTS RESERVED.
+      </div>
+    </div>
   );
 }
 
-// ──────────────────────────────────────────────
-// Marvel-style intro animation
-// ──────────────────────────────────────────────
-function MarvelIntro({ onDone }) {
-  const allGames = [...PC_GAMES, ...PC_GAMES].slice(0, 24);
-  const [phase, setPhase] = useState(0);
-  // phase 0: rapid game flashes  phase 1: UNIMART title slam  phase 2: fade out
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 2200);
-    const t2 = setTimeout(() => setPhase(2), 4000);
-    const t3 = setTimeout(onDone, 5000);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [onDone]);
-
-  return (
-    <motion.div
-      animate={phase === 2 ? { opacity: 0 } : { opacity: 1 }}
-      transition={{ duration: 0.8 }}
-      style={{
-        position: "fixed", inset: 0, zIndex: 9999,
-        background: "#000",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        overflow: "hidden",
-      }}
-    >
-      {/* Phase 0 — rapid game name flicker */}
-      {phase === 0 && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {allGames.map((game, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 1.4 }}
-              animate={{ opacity: [0, 1, 0], scale: [1.4, 1, 0.8] }}
-              transition={{ delay: i * 0.09, duration: 0.16, ease: "easeOut" }}
-              style={{
-                position: "absolute",
-                fontFamily: "'Inter', sans-serif",
-                fontSize: "clamp(18px, 4vw, 44px)",
-                fontWeight: 900,
-                color: i % 3 === 0 ? "#fff" : i % 3 === 1 ? "#a78bfa" : "#f472b6",
-                letterSpacing: "0.15em",
-                textAlign: "center",
-                whiteSpace: "nowrap",
-                textTransform: "uppercase",
-              }}
-            >
-              {game}
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Phase 1 — UNIMART title slam */}
-      {phase >= 1 && (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          {/* Flash burst */}
-          <motion.div
-            initial={{ scale: 0, opacity: 1 }}
-            animate={{ scale: 6, opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            style={{
-              position: "absolute",
-              inset: "-50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%)",
-              borderRadius: "50%",
-              pointerEvents: "none",
-            }}
-          />
-          {/* Game labels ring */}
-          {PC_GAMES.slice(0, 8).map((game, i) => (
-            <motion.div
-              key={game}
-              initial={{ opacity: 0, y: i % 2 === 0 ? -80 : 80, x: (i - 4) * 60 }}
-              animate={{ opacity: [0, 0.5, 0], y: i % 2 === 0 ? -160 : 160, x: (i - 4) * 80 }}
-              transition={{ duration: 1.2, delay: 0.1 + i * 0.06 }}
-              style={{
-                position: "absolute",
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#6366f1",
-                letterSpacing: "0.2em",
-                whiteSpace: "nowrap",
-                top: "50%", left: "50%",
-                transform: "translate(-50%,-50%)",
-              }}
-            >
-              {game}
-            </motion.div>
-          ))}
-          <motion.div
-            initial={{ scaleX: 20, scaleY: 0.1, opacity: 0 }}
-            animate={{ scaleX: 1, scaleY: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.05 }}
-            style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: "clamp(52px, 12vw, 120px)",
-              fontWeight: 900,
-              color: "#fff",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              lineHeight: 1,
-              textShadow: "0 0 60px rgba(99,102,241,0.9), 0 0 120px rgba(168,85,247,0.5)",
-            }}
-          >
-            UNIMART
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "clamp(12px, 2vw, 18px)",
-              fontWeight: 600,
-              color: "#a78bfa",
-              letterSpacing: "0.5em",
-              textTransform: "uppercase",
-              marginTop: 8,
-            }}
-          >
-            STUDENT MARKETPLACE
-          </motion.div>
-
-          {/* Horizontal lines Marvel effect */}
-          {[-1, 1].map((dir) => (
-            <motion.div
-              key={dir}
-              initial={{ scaleX: 0, opacity: 1 }}
-              animate={{ scaleX: 1, opacity: 0 }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              style={{
-                position: "absolute",
-                height: 2,
-                background: "linear-gradient(90deg, transparent, #6366f1, #a855f7, #ec4899, transparent)",
-                left: "-200%", right: "-200%",
-                top: dir > 0 ? "105%" : "-5%",
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Skip intro button */}
-      <button
-        onClick={onDone}
-        style={{
-          position: "absolute", bottom: 24, right: 24,
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.18)",
-          color: "#94a3b8",
-          borderRadius: 8,
-          padding: "6px 14px",
-          fontSize: 12,
-          cursor: "pointer",
-          fontFamily: "'DM Sans', sans-serif",
-          letterSpacing: "0.05em",
-          transition: "background 0.15s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
-      >
-        Skip
-      </button>
-    </motion.div>
-  );
-}
-
-// ──────────────────────────────────────────────
-// Feature card (used in features section)
-// ──────────────────────────────────────────────
-function FeatureCard({ icon, title, description, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
-      whileHover={{ y: -6 }}
-      style={{
-        background: "rgba(20,23,32,0.85)",
-        border: "1px solid #1e2333",
-        borderRadius: 16,
-        padding: "28px 24px",
-        cursor: "default",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(99,102,241,0.45)";
-        e.currentTarget.style.boxShadow = "0 8px 40px rgba(99,102,241,0.18)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#1e2333";
-        e.currentTarget.style.boxShadow = "none";
-      }}
-    >
-      <div style={{ fontSize: 38, marginBottom: 16, lineHeight: 1 }}>{icon}</div>
-      <h3 style={{
-        color: "#edf0f7",
-        fontFamily: "'Syne', sans-serif",
-        fontSize: 17,
-        fontWeight: 700,
-        marginBottom: 10,
-        letterSpacing: "0.01em",
-      }}>
-        {title}
-      </h3>
-      <p style={{
-        color: "#7c88a3",
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 14,
-        lineHeight: 1.65,
-        margin: 0,
-      }}>
-        {description}
-      </p>
-    </motion.div>
-  );
-}
-
-// ──────────────────────────────────────────────
-// Main Landing component
-// ──────────────────────────────────────────────
-export default function Landing() {
+// -- MAIN LANDING --
+function MainLanding() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const [introShown, setIntroShown] = useState(() => {
-    return sessionStorage.getItem("unimart_intro_shown") === "true";
-  });
-  const [isMuted, setIsMuted] = useState(true);
-  const [videoActive, setVideoActive] = useState(false);
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (isAuthenticated) navigate('/home');
-  }, [isAuthenticated, navigate]);
-
-  // Track whether the video is actually playing (non-empty src + loaded successfully)
-  useEffect(() => {
-    if (!VIDEO_SRC) return;
-    const el = videoRef.current;
-    if (!el) return;
-    const onCanPlay = () => setVideoActive(true);
-    const onError = () => setVideoActive(false);
-    el.addEventListener("canplay", onCanPlay);
-    el.addEventListener("error", onError);
-    return () => {
-      el.removeEventListener("canplay", onCanPlay);
-      el.removeEventListener("error", onError);
-    };
-  }, []);
-
-  const handleIntroDone = () => {
-    sessionStorage.setItem("unimart_intro_shown", "true");
-    setIntroShown(true);
-  };
-
-  const toggleMute = () => {
-    const el = videoRef.current;
-    if (!el) return;
-    el.muted = !el.muted;
-    setIsMuted(el.muted);
-  };
-
   return (
-    <>
-      {/* Marvel intro — only once per session */}
-      <AnimatePresence>
-        {!introShown && <MarvelIntro key="intro" onDone={handleIntroDone} />}
-      </AnimatePresence>
+    <div className="lnd" style={{
+      position:"relative",minHeight:"100vh",width:"100%",
+      overflowX:"hidden",display:"flex",flexDirection:"column",
+      alignItems:"center",
+      paddingTop:"clamp(60px,10vh,110px)",paddingBottom:60,
+      paddingLeft:"clamp(16px,4vw,48px)",paddingRight:"clamp(16px,4vw,48px)",
+      opacity:1,
+      pointerEvents:"auto",
+      gap:"clamp(32px,5vh,56px)",zIndex:1,
+    }}>
 
-      {/* ── Hero Section ─────────────────────────────────────── */}
-      <div
-        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)" }}
-      >
-        {/* Full-screen video background (renders null when VIDEO_SRC is empty or video errors) */}
-        <VideoBackground videoRef={videoRef} />
+{/* SECTION 1 — UNIMART TITLE — RGB glow, static, no animation */}
+<div style={{ textAlign: "center", position: "relative" }}>
+  <h1
+    style={{
+      fontFamily: "'Orbitron', sans-serif",
+      fontWeight: 900,
+      fontSize: "clamp(52px, 11vw, 140px)",
+      lineHeight: 1,
+      letterSpacing: "-2px",
+      margin: 0,
+      padding: 0,
+      color: "transparent",
+      backgroundImage: "linear-gradient(90deg, #ff0000, #ff7700, #ffff00, #00ff00, #00ffff, #0000ff, #8b00ff, #ff0000)",
+      backgroundSize: "400% 100%",
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      display: "block",
+      animation: "lnd-rgb-cycle 4s linear infinite",
+    }}
+  >
+    UNIMART
+  </h1>
+</div>
 
-        {/* 3-D game titles floating in background */}
-        <GameBackground />
-
-        {/* Subtle grid overlay */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1,
-          backgroundImage: "linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px)",
-          backgroundSize: "48px 48px",
-        }} />
-
-        {/* Animated gradient orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
-        </div>
-
-        {/* Main content */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: introShown ? 1 : 0, y: introShown ? 0 : 30 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="relative text-center px-6 max-w-2xl"
-          style={{ zIndex: 2 }}
-        >
-          {/* UNIMART heading — Syne font for brand authority */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-6"
-          >
-            <span
-              className="text-6xl sm:text-7xl font-extrabold gradient-text tracking-tight"
-              style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-              UNIMART
-            </span>
-          </motion.div>
-
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-lg sm:text-xl text-gray-300 mb-4 leading-relaxed"
-          >
-            The <span className="text-indigo-400 font-semibold">Secure Student-to-Student</span> Marketplace
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="text-gray-400 mb-12 max-w-lg mx-auto"
-          >
-            Buy and sell textbooks, electronics, notes, and more — exclusively within your university community.
-            Verified students only. Safe transactions with OTP-secured deliveries.
-          </motion.p>
-
-          {/* CTA Buttons — motion.button for whileHover/whileTap */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <motion.button
-              onClick={() => navigate('/login')}
-              className="btn-primary text-lg px-12 py-4 rounded-2xl"
-              title="User Login"
-              whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(99,102,241,0.4)" }}
-              whileTap={{ scale: 0.95 }}
-              style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.25)" }}
-            >
-              🔐
-            </motion.button>
-
-            <motion.button
-              onClick={() => navigate('/admin/login')}
-              className="text-lg px-12 py-4 rounded-2xl border text-gray-200 backdrop-blur-sm"
-              title="Admin Login"
-              whileHover={{ scale: 1.05, background: "rgba(255,255,255,0.12)" }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              ⚙️
-            </motion.button>
-          </motion.div>
-
-          {/* Scroll hint */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.8, duration: 0.6 }}
-            style={{ marginTop: 48, color: "#404c65" }}
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-              style={{ fontSize: 20 }}
-            >
-              ↓
-            </motion.div>
-          </motion.div>
-        </motion.div>
+      {/* 2. Built for University Students */}
+      <div style={{ textAlign:"center", animation:"lnd-fade-up 0.6s ease 0.1s both" }}>
+        <h2 style={{ fontFamily:"'Rajdhani',sans-serif",fontWeight:700,fontSize:"clamp(26px,4.5vw,52px)",color:"#fff",letterSpacing:"-0.5px",margin:0,lineHeight:1.15 }}>Built for University Students</h2>
       </div>
 
-      {/* ── Features Section ─────────────────────────────────── */}
-      <div style={{
-        background: "linear-gradient(180deg, #0f172a 0%, #0a0c12 100%)",
-        padding: "80px 24px 72px",
-      }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-
-          {/* Section label + heading */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            style={{ textAlign: "center", marginBottom: 56 }}
-          >
-            <p style={{
-              color: "#6366f1",
-              fontFamily: "'Syne', sans-serif",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-              textTransform: "uppercase",
-              marginBottom: 14,
-            }}>
-              WHY UNIMART
-            </p>
-            <h2 style={{
-              color: "#edf0f7",
-              fontFamily: "'Syne', sans-serif",
-              fontSize: "clamp(26px, 4vw, 40px)",
-              fontWeight: 800,
-              letterSpacing: "0.01em",
-              lineHeight: 1.2,
-              marginBottom: 14,
-            }}>
-              Built for University Students
-            </h2>
-            <p style={{
-              color: "#7c88a3",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 16,
-              maxWidth: 480,
-              margin: "0 auto",
-              lineHeight: 1.6,
-            }}>
-              A closed-ecosystem marketplace where every buyer and seller is a verified student from your campus.
-            </p>
-          </motion.div>
-
-          {/* Feature cards grid */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-            gap: 24,
-          }}>
-            {FEATURES.map((f, i) => (
-              <FeatureCard key={f.title} {...f} index={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Footer ───────────────────────────────────────────── */}
-      <div style={{
-        background: "#0a0c12",
-        borderTop: "1px solid #1e2333",
-        padding: "24px 16px",
-        textAlign: "center",
-      }}>
-        <p style={{
-          color: "#404c65",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 12,
-          margin: 0,
-        }}>
-          © 2026 Unimart — Built for students, by students.
+      {/* 3. Description */}
+      <div style={{ textAlign:"center",maxWidth:560, animation:"lnd-fade-up 0.6s ease 0.2s both" }}>
+        <p style={{ fontFamily:"'Rajdhani',sans-serif",fontWeight:400,fontSize:"clamp(14px,1.8vw,18px)",color:"rgba(255,255,255,0.52)",lineHeight:1.7,margin:0 }}>
+          A closed-ecosystem marketplace where every buyer and seller is a verified student from your campus.
         </p>
       </div>
 
-      {/* Mute / unmute toggle — only rendered when a video is actively playing */}
-      {VIDEO_SRC && videoActive && (
-        <motion.button
-          onClick={toggleMute}
-          title={isMuted ? "Unmute video" : "Mute video"}
-          whileHover={{ background: "rgba(255,255,255,0.16)" }}
-          whileTap={{ scale: 0.9 }}
-          style={{
-            position: "fixed", bottom: 72, right: 24, zIndex: 20,
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.18)",
-            color: "#e2e8f0",
-            borderRadius: 999,
-            width: 40, height: 40,
-            cursor: "pointer",
-            fontSize: 18,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          {isMuted ? "🔇" : "🔊"}
-        </motion.button>
-      )}
-    </>
+      {/* 4. Social footer links */}
+      <SocialFooter />
+
+      {/* 5. USER + ADMIN buttons — transparent */}
+      <div className="lnd-buttons-row" style={{ display:"flex",gap:"clamp(18px,4vw,52px)",flexWrap:"wrap",justifyContent:"center" }}>
+        <PortalButton label="USER"  icon="🎓" sublabel="Student Portal"  color="#00d4ff" animDelay="1.1s" onClick={() => navigate("/login")} />
+        <PortalButton label="ADMIN" icon="🛡️" sublabel="Control Center" color="#ff2d55" animDelay="1.2s" onClick={() => navigate("/admin")} />
+      </div>
+
+      {/* 6. Feature cards — fully transparent, outline only */}
+      <div className="lnd-cards-row" style={{ display:"flex",gap:"clamp(12px,2vw,20px)",width:"100%",maxWidth:1100,flexWrap:"wrap",justifyContent:"center" }}>
+        {FEATURE_CARDS.map((c,i) => <FeatureCard key={c.title} icon={c.icon} title={c.title} desc={c.desc} animDelay={`${1.3+i*0.1}s`} />)}
+      </div>
+    </div>
+  );
+}
+
+// -- ROOT --
+export default function Landing() {
+  return (
+    <div className="lnd-cursor-hidden" style={{ minHeight: "100vh" }}>
+      {/* Pitch black background */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, background: "#000000" }} />
+      {/* Tube cursor canvas — landing page only */}
+      <TubeCanvas />
+      {/* Main landing — no intro, loads directly */}
+      <MainLanding />
+    </div>
   );
 }
