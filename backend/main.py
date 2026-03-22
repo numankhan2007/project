@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from models import UserProfile
-from routers import auth, products, orders, chat, otp, admin
+from routers import auth, products, orders, chat, otp, admin, upload
 from scheduler import start_scheduler, stop_scheduler
 from seed_data import seed_official_records
 from admin_auth import seed_super_admin
@@ -107,6 +107,7 @@ app.include_router(orders.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(otp.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(upload.router, prefix="/api")
 
 
 # ============================================================

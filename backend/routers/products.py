@@ -69,6 +69,28 @@ def get_all_products(
 
 
 # ============================================================
+# GET /products/my — Get current user's products
+# ============================================================
+
+@router.get("/my")
+def get_my_products(
+    current_user: UserProfile = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all products listed by the current user."""
+    products = db.query(Product).options(
+        joinedload(Product.seller).joinedload(UserProfile.official_record)
+    ).filter(
+        Product.seller_register_number == current_user.register_number
+    ).order_by(Product.created_at.desc()).all()
+
+    return [
+        _format_product(p, p.seller, p.seller.official_record if p.seller else None)
+        for p in products
+    ]
+
+
+# ============================================================
 # GET /products/search — Search products
 # ============================================================
 

@@ -7,9 +7,18 @@ import { formatPrice, formatRelativeTime } from '../../utils/helpers';
 import { CATEGORIES } from '../../constants';
 
 export default function ProductCard({ product, index = 0 }) {
-  const isSold = product.status === 'sold';
+  const isSold = product.product_status === 'sold' || product.status === 'sold';
   const category = CATEGORIES.find((c) => c.id === product.category);
   const isFree = product.price === 0;
+
+  // Handle both API format and mock format for images
+  const imageUrl = product.image_urls?.[0] || product.image_url || product.images?.[0] || '/placeholder.png';
+
+  // Handle both API format and mock format for seller info
+  const sellerLocation = product.seller_college || product.seller?.campus || 'Campus';
+
+  // Handle both API format and mock format for dates
+  const createdAt = product.created_at || product.createdAt;
 
   return (
     <motion.div
@@ -26,19 +35,21 @@ export default function ProductCard({ product, index = 0 }) {
           {/* Desktop: aspect-video, Mobile: aspect-[3/4] */}
           <div className="aspect-[3/4] md:aspect-video">
             <img
-              src={product.images[0]}
+              src={imageUrl}
               alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 bg-gray-100 dark:bg-gray-800"
             />
           </div>
 
           {/* Category Badge */}
-          <div className="absolute top-3 left-3">
-            <Badge color={category?.color || 'indigo'}>
-              <span className="mr-1">{category?.icon}</span>
-              {category?.name || product.category}
-            </Badge>
-          </div>
+          {category && (
+            <div className="absolute top-3 left-3">
+              <Badge color={category?.color || 'indigo'}>
+                <span className="mr-1">{category?.icon}</span>
+                {category?.name || product.category}
+              </Badge>
+            </div>
+          )}
 
           {/* Sold Ribbon */}
           {isSold && <SoldRibbon />}
@@ -67,12 +78,14 @@ export default function ProductCard({ product, index = 0 }) {
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               <MapPin size={12} />
-              <span>{product.seller.campus}</span>
+              <span className="truncate max-w-[100px]">{sellerLocation}</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Clock size={12} />
-              <span>{formatRelativeTime(product.createdAt)}</span>
-            </div>
+            {createdAt && (
+              <div className="flex items-center gap-1 text-xs text-gray-400">
+                <Clock size={12} />
+                <span>{formatRelativeTime(createdAt)}</span>
+              </div>
+            )}
           </div>
         </div>
       </Link>

@@ -1,17 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp, Zap, BadgeCheck, Users } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, BadgeCheck, Users, Loader2, RefreshCw } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import ProductFilters from '../components/product/ProductFilters';
-import { MOCK_PRODUCTS, CATEGORIES } from '../constants';
+import { CATEGORIES } from '../constants';
 import api from '../services/api';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const [registeredCount, setRegisteredCount] = useState('...');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Fetch stats
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -25,6 +29,25 @@ export default function Home() {
     fetchStats();
   }, []);
 
+  // Fetch products
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.get('/products');
+      setProducts(data);
+    } catch (err) {
+      console.error("Failed to fetch products", err);
+      setError('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     condition: '',
@@ -36,16 +59,16 @@ export default function Home() {
   });
 
   const filteredProducts = useMemo(() => {
-    let result = [...MOCK_PRODUCTS];
+    let result = [...products];
 
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+          p.title?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q)
       );
     }
 
@@ -54,9 +77,9 @@ export default function Home() {
       result = result.filter((p) => p.category === filters.category);
     }
 
-    // Condition
+    // Condition (from description)
     if (filters.condition) {
-      result = result.filter((p) => p.condition === filters.condition);
+      result = result.filter((p) => p.description?.includes(`[Condition: ${filters.condition}]`));
     }
 
     // Price Range
@@ -69,7 +92,7 @@ export default function Home() {
 
     // Campus
     if (filters.campus) {
-      result = result.filter((p) => p.seller?.campus === filters.campus);
+      result = result.filter((p) => p.seller_college === filters.campus);
     }
 
     // Free Only
@@ -86,15 +109,15 @@ export default function Home() {
         result.sort((a, b) => b.price - a.price);
         break;
       case 'oldest':
-        result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         break;
       case 'newest':
       default:
-        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
     return result;
-  }, [filters, searchQuery]);
+  }, [filters, searchQuery, products]);
 
   const clearFilters = () => {
     setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false });
@@ -198,6 +221,15 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {searchQuery ? `Results for "${searchQuery}"` : 'Latest Listings'}
           </h2>
+          {error && (
+            <button
+              onClick={fetchProducts}
+              className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
+            >
+              <RefreshCw size={14} />
+              Retry
+            </button>
+          )}
         </div>
 
         <ProductFilters
@@ -208,7 +240,17 @@ export default function Home() {
         />
 
         <div className="mt-6">
-          <ProductGrid products={filteredProducts} />
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-gray-500 dark:text-gray-400">{error}</p>
+            </div>
+          ) : (
+            <ProductGrid products={filteredProducts} />
+          )}
         </div>
       </section>
     </div>

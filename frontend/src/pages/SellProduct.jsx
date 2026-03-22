@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera, Tag, FileText, IndianRupee, Layers, Upload, Gift } from 'lucide-react';
+import { Camera, Tag, FileText, IndianRupee, Layers, Upload, Gift, Loader2 } from 'lucide-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { CATEGORIES, CONDITION_OPTIONS } from '../constants';
+import api from '../services/api';
 
 export default function SellProduct() {
   const { user } = useAuth();
-  const { success } = useNotifications();
+  const { success, error: showError } = useNotifications();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [isFree, setIsFree] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -55,10 +57,48 @@ export default function SellProduct() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    success('🎉 Product listed successfully!');
-    setLoading(false);
-    navigate('/');
+
+    try {
+      let imageUrls = [];
+
+      // Upload images to Cloudinary if any
+      if (formData.images.length > 0) {
+        setUploadingImages(true);
+        const uploadFormData = new FormData();
+        formData.images.forEach((file) => {
+          uploadFormData.append('files', file);
+        });
+
+        const uploadResponse = await api.post('/upload/images', uploadFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        imageUrls = uploadResponse.data.urls;
+        setUploadingImages(false);
+      }
+
+      // Build description with condition info
+      const fullDescription = formData.condition
+        ? `[Condition: ${formData.condition}]\n\n${formData.description}`
+        : formData.description;
+
+      const productData = {
+        title: formData.title.trim(),
+        description: fullDescription.trim(),
+        price: isFree ? 0 : Number(formData.price),
+        category: formData.category,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+      };
+
+      await api.post('/products', productData);
+      success('Product listed successfully!');
+      navigate('/dashboard');
+    } catch (err) {
+      const message = err.response?.data?.detail || err.message || 'Failed to list product. Please try again.';
+      showError(message);
+      setUploadingImages(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateField = (field, value) => {
@@ -256,7 +296,7 @@ export default function SellProduct() {
             loading={loading}
             icon={Upload}
           >
-            List Product
+            {uploadingImages ? 'Uploading images...' : 'List Product'}
           </Button>
         </form>
       </motion.div>
