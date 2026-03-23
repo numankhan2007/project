@@ -276,8 +276,6 @@ export default function Dashboard() {
           <HistoryTabs
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            buyCount={buyOrders.length}
-            sellCount={sellOrders.length}
           />
           <div className="mt-4">
             {activeTab === 'buy' ? (

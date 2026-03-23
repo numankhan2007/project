@@ -24,11 +24,11 @@ export default function ProductCard({ product, index = 0 }) {
         {/* Image */}
         <div className="relative overflow-hidden">
           {/* Desktop: aspect-video, Mobile: aspect-[3/4] */}
-          <div className="aspect-[3/4] md:aspect-video">
+          <div className="aspect-[3/4] md:aspect-video bg-white">
             <img
               src={product.images[0]}
               alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
           </div>
 
