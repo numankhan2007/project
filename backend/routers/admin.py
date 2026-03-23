@@ -507,3 +507,39 @@ def list_audit_logs(
         page_size=page_size,
         total_pages=total_pages,
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# USER ACTIVITY LOGS
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/user-activity-logs")
+def get_user_activity_logs(
+    page: int = 1,
+    page_size: int = 20,
+    admin: AdminAccount = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    from models import UserActivityLog
+    query = db.query(UserActivityLog).order_by(UserActivityLog.created_at.desc())
+    total = query.count()
+    logs = query.offset((page - 1) * page_size).limit(page_size).all()
+    return {
+        "items": [
+            {
+                "id": l.id,
+                "register_number": l.register_number,
+                "username": l.username,
+                "action": l.action,
+                "details": l.details,
+                "ip_address": l.ip_address,
+                "created_at": l.created_at,
+            }
+            for l in logs
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": max(1, math.ceil(total / page_size)),
+    }
+

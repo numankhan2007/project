@@ -1,11 +1,19 @@
 // Mock data constants for UNIMART
 
 export const CATEGORIES = [
-  { id: 'textbooks', name: 'Textbooks', icon: '📚', color: 'indigo' },
-  { id: 'electronics', name: 'Electronics', icon: '💻', color: 'cyan' },
-  { id: 'notes', name: 'Notes & Study Material', icon: '📝', color: 'purple' },
-  { id: 'sports', name: 'Sports Equipment', icon: '⚽', color: 'emerald' },
-  { id: 'other', name: 'Other', icon: '📦', color: 'gray' },
+  { id: 'textbooks',           name: 'Textbooks',               icon: '📚', color: 'indigo'  },
+  { id: 'notes',               name: 'Notes & Study Material',   icon: '📝', color: 'purple'  },
+  { id: 'electronics',         name: 'Electronics & Gadgets',    icon: '💻', color: 'cyan'    },
+  { id: 'lab_equipment',       name: 'Lab Coats & Equipment',    icon: '🥼', color: 'teal'    },
+  { id: 'stationery',          name: 'Stationery & Supplies',    icon: '✏️', color: 'amber'   },
+  { id: 'drafting',            name: 'Drafting & Drawing Tools', icon: '📐', color: 'blue'    },
+  { id: 'calculators',         name: 'Calculators & Instruments',icon: '🔢', color: 'slate'   },
+  { id: 'sports',              name: 'Sports Equipment',         icon: '⚽', color: 'emerald' },
+  { id: 'bicycles',            name: 'Bicycles & Transport',     icon: '🚲', color: 'lime'    },
+  { id: 'room_essentials',     name: 'Room & Hostel Essentials', icon: '🛏️', color: 'orange'  },
+  { id: 'clothing',            name: 'Clothing & Uniforms',      icon: '👕', color: 'rose'    },
+  { id: 'musical_instruments', name: 'Musical Instruments',      icon: '🎸', color: 'fuchsia' },
+  { id: 'other',               name: 'Other',                    icon: '📦', color: 'gray'    },
 ];
 
 export const CAMPUSES = [

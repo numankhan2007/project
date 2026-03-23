@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, MapPin, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, GraduationCap, X, Check, Info, Lock, Save, Tag, Loader2 } from 'lucide-react';
@@ -12,6 +12,8 @@ import OTPModal from '../components/order/OTPModal';
 import Badge from '../components/common/Badge';
 import { getInitials, formatDate } from '../utils/helpers';
 import api from '../services/api';
+
+const REFRESH_INTERVAL = 30000; // 30 seconds
 
 export default function Dashboard() {
   const { user, updateProfile } = useAuth();
@@ -29,42 +31,31 @@ export default function Dashboard() {
   const [myProductsCount, setMyProductsCount] = useState(0);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Fetch orders from API
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoadingOrders(true);
-      try {
-        const [buyData, sellData] = await Promise.all([
-          getOrdersByBuyer(),
-          getOrdersBySeller()
-        ]);
-        setBuyOrders(buyData || []);
-        setSellOrders(sellData || []);
-      } catch (error) {
-        console.error('Failed to fetch orders:', error);
-      } finally {
-        setLoadingOrders(false);
-      }
-    };
-    fetchOrders();
+  // Fetch counts from APIs + auto-refresh every 30s
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [buyData, sellData, prodRes] = await Promise.all([
+        getOrdersByBuyer(),
+        getOrdersBySeller(),
+        api.get('/products/my'),
+      ]);
+      setBuyOrders(buyData || []);
+      setSellOrders(sellData || []);
+      setMyProductsCount(prodRes.data?.length || 0);
+    } catch (error) {
+      console.error('Failed to fetch dashboard counts:', error);
+    } finally {
+      setLoadingOrders(false);
+      setLoadingProducts(false);
+    }
   }, [getOrdersByBuyer, getOrdersBySeller]);
 
-  // Fetch user's products count
   useEffect(() => {
-    const fetchMyProducts = async () => {
-      setLoadingProducts(true);
-      try {
-        const response = await api.get('/products/my');
-        setMyProductsCount(response.data?.length || 0);
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-        setMyProductsCount(0);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-    fetchMyProducts();
-  }, []);
+    fetchCounts(); // initial fetch
+
+    const interval = setInterval(fetchCounts, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchCounts]);
 
   // Callback when a product is deleted
   const handleProductDeleted = () => {

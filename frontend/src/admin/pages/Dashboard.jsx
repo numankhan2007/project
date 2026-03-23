@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { tokens } from "../styles/tokens";
 import adminApi from "../api/adminApi";
 import { useToast } from "../components/AdminToast";
@@ -15,23 +15,67 @@ const STAT_CARDS = (stats) => [
   { label: "Completed Orders", value: stats.completed_orders, color: tokens.success },
 ];
 
+const REFRESH_INTERVAL = 30000; // 30 seconds
+
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const { addToast } = useToast();
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     adminApi.get("/admin/dashboard/stats")
-      .then((r) => setStats(r.data))
+      .then((r) => {
+        setStats(r.data);
+        setLastUpdated(new Date());
+      })
       .catch(() => addToast("Failed to load dashboard stats", "error"));
-  }, []);
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchStats(); // load immediately on mount
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchStats, REFRESH_INTERVAL);
+
+    return () => clearInterval(interval); // cleanup on unmount
+  }, [fetchStats]);
 
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: tokens.fontDisplay, fontSize: 28, fontWeight: 800, color: tokens.textPrimary, margin: 0 }}>
-          Dashboard
-        </h1>
-        <p style={{ color: tokens.textMuted, fontSize: 14, marginTop: 4 }}>Platform overview</p>
+      {/* Header with Live Indicator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32, flexWrap: "wrap" }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: tokens.fontDisplay, fontSize: 28, fontWeight: 800, color: tokens.textPrimary, margin: 0 }}>
+            Dashboard
+          </h1>
+          <p style={{ color: tokens.textMuted, fontSize: 14, marginTop: 4 }}>Platform overview</p>
+        </div>
+        {/* Live indicator */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "5px 12px",
+            background: tokens.accentGlow,
+            border: `1px solid ${tokens.accent}`,
+            borderRadius: tokens.radius.pill,
+            fontSize: 11, fontWeight: 600,
+            color: tokens.accent,
+            letterSpacing: "0.04em",
+          }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: tokens.accent,
+              animation: "pulse 1.5s ease-in-out infinite",
+              boxShadow: `0 0 6px ${tokens.accent}`,
+            }} />
+            LIVE · 30s
+          </div>
+          {lastUpdated && (
+            <span style={{ fontSize: 10, color: tokens.textMuted, fontFamily: tokens.fontMono }}>
+              {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
 
       {stats ? (

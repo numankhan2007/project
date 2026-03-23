@@ -72,7 +72,7 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/home?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -120,7 +120,7 @@ export default function Navbar() {
       <div className="section-padding">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+          <Link to="/home" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center shadow-lg">
               <ShoppingBag size={20} className="text-white" />
             </div>

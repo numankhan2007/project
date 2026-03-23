@@ -46,6 +46,7 @@ def get_all_products(
     category: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """List all available products with optional filters."""
@@ -59,6 +60,15 @@ def get_all_products(
         query = query.filter(Product.price >= min_price)
     if max_price is not None:
         query = query.filter(Product.price <= max_price)
+    if search:
+        search_term = f"%{search.lower()}%"
+        query = query.filter(
+            or_(
+                Product.title.ilike(search_term),
+                Product.description.ilike(search_term),
+                Product.category.ilike(search_term),
+            )
+        )
 
     products = query.order_by(Product.created_at.desc()).all()
 

@@ -145,3 +145,20 @@ class ProductImage(Base):
     position   = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     product    = relationship("Product", back_populates="product_images")
+
+
+# ============================================================
+# User Activity Log (tracks login, registration, order events)
+# ============================================================
+
+class UserActivityLog(Base):
+    __tablename__ = "user_activity_logs"
+
+    id              = Column(Integer, primary_key=True, autoincrement=True)
+    register_number = Column(String, ForeignKey("user_profiles.register_number"), nullable=False, index=True)
+    username        = Column(String, nullable=True)
+    action          = Column(String(80), nullable=False)
+    details         = Column(Text, nullable=True)
+    ip_address      = Column(String(45), nullable=True)
+    created_at      = Column(DateTime(timezone=True), server_default=func.now())
+

@@ -19,7 +19,9 @@ adminApi.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("unimart_admin_token");
       localStorage.removeItem("unimart_admin");
-      window.location.href = "/admin/login";
+      if (window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
     }
     return Promise.reject(error);
   }

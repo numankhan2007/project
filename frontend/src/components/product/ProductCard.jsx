@@ -5,7 +5,7 @@ import SoldRibbon from './SoldRibbon';
 import { formatPrice } from '../../utils/helpers';
 
 export default function ProductCard({ product, index = 0 }) {
-  const isSold = product.product_status === 'sold' || product.status === 'sold';
+  const isSold = product.product_status === 'SOLD_OUT' || product.product_status === 'sold' || product.status === 'sold';
   const isFree = product.price === 0;
 
   // Handle both API format and mock format for images
@@ -39,7 +39,22 @@ export default function ProductCard({ product, index = 0 }) {
             {/* Gradient Overlay at Bottom */}
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
 
-            {/* Sold Ribbon */}
+            {/* SOLD OUT ribbon — shows when product is SOLD_OUT */}
+            {isSold && (
+              <div style={{
+                position: "absolute", top: 12, left: 12,
+                background: "#ef4444", color: "#fff",
+                fontSize: 11, fontWeight: 700,
+                padding: "3px 10px", borderRadius: 6,
+                letterSpacing: "0.06em",
+                boxShadow: "0 2px 8px rgba(239,68,68,0.4)",
+                zIndex: 2,
+              }}>
+                SOLD OUT
+              </div>
+            )}
+
+            {/* Legacy Sold Ribbon (if component exists) */}
             {isSold && <SoldRibbon />}
 
             {/* Price Tag with Enhanced Style */}

@@ -29,15 +29,21 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  // Fetch products
+  // Fetch products with filters from API
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.get('/products');
+      const params = {};
+      if (filters.category) params.category = filters.category;
+      if (filters.priceMin !== '') params.min_price = filters.priceMin;
+      if (filters.priceMax !== '') params.max_price = filters.priceMax;
+      if (searchQuery) params.search = searchQuery;
+
+      const { data } = await api.get('/products/', { params });
       setProducts(data);
     } catch (err) {
-      console.error("Failed to fetch products", err);
+      console.error('Failed to fetch products', err);
       setError('Failed to load products');
     } finally {
       setLoading(false);
@@ -46,7 +52,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [searchQuery, filters.category, filters.priceMin, filters.priceMax]);
 
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
@@ -61,36 +67,12 @@ export default function Home() {
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title?.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q) ||
-          p.category?.toLowerCase().includes(q)
-      );
-    }
-
-    // Category
-    if (filters.category) {
-      result = result.filter((p) => p.category === filters.category);
-    }
-
-    // Condition (from description)
+    // Condition (from description) — client-side only
     if (filters.condition) {
       result = result.filter((p) => p.description?.includes(`[Condition: ${filters.condition}]`));
     }
 
-    // Price Range
-    if (filters.priceMin !== '') {
-      result = result.filter((p) => p.price >= Number(filters.priceMin));
-    }
-    if (filters.priceMax !== '') {
-      result = result.filter((p) => p.price <= Number(filters.priceMax));
-    }
-
-    // Campus
+    // Campus — client-side only
     if (filters.campus) {
       result = result.filter((p) => p.seller_college === filters.campus);
     }
@@ -117,7 +99,7 @@ export default function Home() {
     }
 
     return result;
-  }, [filters, searchQuery, products]);
+  }, [filters, products]);
 
   const clearFilters = () => {
     setFilters({ category: '', condition: '', sort: 'newest', priceMin: '', priceMax: '', campus: '', freeOnly: false });

@@ -38,14 +38,16 @@ api.interceptors.request.use(
 );
 
 // Response interceptor - handle auth errors, refresh token, and network errors
+// CRITICAL: Only redirect to /login on 401 (auth) errors, NOT on 404/500/network errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Network error (no response from server)
+
+    // ── Network error — backend unreachable ──────────────────────────
     if (!error.response) {
-      console.error('[API] Network error — backend unreachable:', error.message);
+      console.error("[API] Network error:", error.message);
       const networkError = new Error(
-        'Server Error: Unable to connect to the backend. Please check your internet connection or try again later.'
+        "Unable to connect to the server. Please check your internet connection."
       );
       networkError.isNetworkError = true;
       return Promise.reject(networkError);
@@ -53,34 +55,47 @@ api.interceptors.response.use(
 
     const originalRequest = error.config;
 
-    // Auth error — attempt refresh token, then redirect
+    // ── 401 Unauthorized — attempt token refresh ─────────────────────
     if (error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      try {
-        const refreshToken = localStorage.getItem("unimart_refresh_token");
-        if (refreshToken) {
-          const { data } = await axios.post(
-            `${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/auth/refresh`,
-            { refresh_token: refreshToken }
-          );
+
+      const refreshToken = localStorage.getItem("unimart_refresh_token");
+
+      if (refreshToken) {
+        try {
+          const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+          const { data } = await axios.post(`${baseUrl}/auth/refresh`, {
+            refresh_token: refreshToken,
+          });
           localStorage.setItem("unimart_token", data.access_token);
           originalRequest.headers["Authorization"] = `Bearer ${data.access_token}`;
           return api(originalRequest);
+        } catch (refreshError) {
+          // Refresh failed — clear tokens and redirect to login
+          localStorage.removeItem("unimart_token");
+          localStorage.removeItem("unimart_refresh_token");
+          localStorage.removeItem("unimart_user");
+          if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+            window.location.href = "/login";
+          }
+          return Promise.reject(refreshError);
         }
-      } catch {
-        localStorage.removeItem("unimart_token");
-        localStorage.removeItem("unimart_refresh_token");
+      }
+
+      // No refresh token available — redirect to login ONLY if not already there
+      localStorage.removeItem("unimart_token");
+      localStorage.removeItem("unimart_user");
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
         window.location.href = "/login";
-        return Promise.reject(error);
       }
-      // No refresh token available
-      localStorage.removeItem('unimart_token');
-      localStorage.removeItem('unimart_user');
-      if (!['/login', '/register'].includes(window.location.pathname)) {
-        window.location.href = '/login';
-      }
+      return Promise.reject(error);
     }
 
+    // ── 403 Forbidden — DO NOT redirect, just reject ─────────────────
+    // ── 404 Not Found — DO NOT redirect, just reject ─────────────────
+    // ── 422 Validation Error — DO NOT redirect, just reject ──────────
+    // ── 500 Server Error — DO NOT redirect, just reject ──────────────
+    // All other errors: pass through so components can handle them
     return Promise.reject(error);
   }
 );

@@ -19,7 +19,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
+            <Link to="/home" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center shadow-lg">
                 <ShoppingBag size={20} className="text-white" />
               </div>
@@ -53,7 +53,7 @@ export default function Footer() {
               {CATEGORIES.slice(0, 6).map((cat) => (
                 <li key={cat.id}>
                   <Link
-                    to={`/?category=${cat.id}`}
+                    to={`/home?category=${cat.id}`}
                     className="text-sm hover:text-white transition-colors flex items-center gap-2"
                   >
                     <span>{cat.icon}</span>

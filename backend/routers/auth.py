@@ -4,7 +4,7 @@ import re
 import secrets
 import time
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import get_db
@@ -19,6 +19,31 @@ from services.email_service import send_registration_otp_email
 from redis_client import redis_client
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+def log_user_activity(db, register_number: str, username: str, action: str, details: str = None, ip: str = None):
+    """Log user activity events (login, registration, order events) without crashing the main flow."""
+    try:
+        from models import UserActivityLog
+        log = UserActivityLog(
+            register_number=register_number,
+            username=username,
+            action=action,
+            details=details,
+            ip_address=ip,
+        )
+        db.add(log)
+        db.commit()
+    except Exception:
+        pass  # Never crash the main flow because of logging
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request headers."""
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 REFRESH_TOKEN_EXPIRE = timedelta(days=7)
 REFRESH_SECRET = os.getenv("REFRESH_TOKEN_SECRET", "change-this-refresh-secret")
@@ -193,7 +218,7 @@ def verify_registration_otp(data: RegistrationOTPVerify):
 # ============================================================
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register_user(data: UserSignup, db: Session = Depends(get_db)):
+def register_user(data: UserSignup, request: Request, db: Session = Depends(get_db)):
     """
     Register a new user.
     1. Verify register_number exists in OfficialRecord
@@ -272,6 +297,11 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
+    # Log registration activity
+    log_user_activity(db, new_user.register_number, new_user.username, "USER_REGISTERED",
+                      details=f"Registered with email {new_user.personal_mail_id}",
+                      ip=_get_client_ip(request))
+
     # Step 5: Generate JWT
     token = create_access_token(data={"sub": new_user.register_number})
 
@@ -298,7 +328,7 @@ def register_user(data: UserSignup, db: Session = Depends(get_db)):
 # ============================================================
 
 @router.post("/login", response_model=TokenResponse)
-def login_user(data: UserLogin, db: Session = Depends(get_db)):
+def login_user(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     """
     Authenticate user with register number (studentId) and password.
     Returns JWT token + user data (joined from both tables).
@@ -331,6 +361,10 @@ def login_user(data: UserLogin, db: Session = Depends(get_db)):
     official = db.query(OfficialRecord).filter(
         OfficialRecord.register_number == user.register_number
     ).first()
+
+    # Log login activity
+    log_user_activity(db, user.register_number, user.username, "USER_LOGIN",
+                      ip=_get_client_ip(request))
 
     # Generate JWT
     token = create_access_token(data={"sub": user.register_number})
