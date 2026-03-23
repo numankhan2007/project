@@ -45,7 +45,7 @@ export default function BuyHistory({ orders, onGenerateOTP }) {
             <img
               src={getOrderImage(order)}
               alt={order.product_title}
-              className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-white dark:bg-gray-800 p-2 border border-gray-200 dark:border-gray-700"
+              className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-white p-2 border border-gray-100 shadow-sm"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">

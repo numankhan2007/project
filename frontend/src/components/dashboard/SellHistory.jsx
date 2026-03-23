@@ -45,7 +45,7 @@ export default function SellHistory({ orders, onVerifyOTP }) {
             <img
               src={getOrderImage(order)}
               alt={order.product_title}
-              className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-gray-100 dark:bg-gray-800 p-1"
+              className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-white p-2 border border-gray-100 shadow-sm"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">

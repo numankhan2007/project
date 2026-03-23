@@ -121,7 +121,7 @@ export default function MyProducts({ onProductDeleted }) {
                 <img
                   src={imageUrl}
                   alt={product.title}
-                  className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-white dark:bg-gray-800 p-2 border border-gray-200 dark:border-gray-700"
+                  className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-white p-2 border border-gray-100 shadow-sm"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -215,7 +215,7 @@ export default function MyProducts({ onProductDeleted }) {
                   <img
                     src={deleteModal.product?.image_urls?.[0] || deleteModal.product?.image_url || '/placeholder.png'}
                     alt={deleteModal.product?.title}
-                    className="w-16 h-16 rounded-lg object-contain bg-white dark:bg-gray-700 p-2 border border-gray-200 dark:border-gray-600"
+                    className="w-16 h-16 rounded-lg object-contain bg-white p-2 border border-gray-100 shadow-sm"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">

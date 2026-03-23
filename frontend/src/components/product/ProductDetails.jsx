@@ -64,24 +64,27 @@ export default function ProductDetails({ product, onOrder, onBack }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Section */}
         <div className="space-y-4">
-          <div className="relative card overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <div className="aspect-square">
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            className="relative overflow-hidden bg-white rounded-3xl border border-gray-100 shadow-2xl shadow-indigo-500/10"
+          >
+            <div className="aspect-square flex items-center justify-center p-8">
               <img
                 src={images[selectedImage]}
                 alt={product.title}
-                className="w-full h-full object-contain p-6"
+                className="max-w-full max-h-full object-contain filter drop-shadow-xl transition-transform duration-500 hover:scale-110"
               />
             </div>
             {isSold && <SoldRibbon />}
-          </div>
+          </motion.div>
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-2">
               {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all bg-white dark:bg-gray-800
-                    ${i === selectedImage ? 'border-indigo-500 shadow-lg' : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'}`}
+                  className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 bg-white shadow-md
+                    ${i === selectedImage ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-105' : 'border-gray-100 opacity-70 hover:opacity-100 hover:scale-105 hover:border-indigo-300'}`}
                 >
                   <img src={img} alt="" className="w-full h-full object-contain p-2" />
                 </button>
@@ -122,52 +125,56 @@ export default function ProductDetails({ product, onOrder, onBack }) {
           </div>
 
           {/* Description */}
-          <div className="card p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+          <div className="card p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800/80 dark:to-gray-900/50 border border-gray-100 dark:border-gray-700/50 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl group-hover:bg-indigo-500/10 transition-colors" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              Description
+            </h3>
+            <p className="text-[15px] text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap relative z-10">
               {cleanDescription || 'No description provided.'}
             </p>
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="card p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-                <User size={18} className="text-indigo-500" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="card p-4 flex items-center gap-4 bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm border border-gray-100/50 dark:border-gray-700/30 group">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <User size={20} className="text-indigo-500" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Seller</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{sellerUsername}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Seller</p>
+                <p className="text-base font-bold text-gray-900 dark:text-white">{sellerUsername}</p>
               </div>
             </div>
-            <div className="card p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-                <MapPin size={18} className="text-purple-500" />
+            <div className="card p-4 flex items-center gap-4 bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm border border-gray-100/50 dark:border-gray-700/30 group">
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MapPin size={20} className="text-purple-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Campus</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{sellerCampus}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Campus</p>
+                <p className="text-base font-bold text-gray-900 dark:text-white truncate">{sellerCampus}</p>
               </div>
             </div>
             {createdAt && (
-              <div className="card p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-pink-50 dark:bg-pink-900/20 flex items-center justify-center">
-                  <Calendar size={18} className="text-pink-500" />
+              <div className="card p-4 flex items-center gap-4 bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm border border-gray-100/50 dark:border-gray-700/30 group">
+                <div className="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Calendar size={20} className="text-pink-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Listed</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(createdAt)}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Listed</p>
+                  <p className="text-base font-bold text-gray-900 dark:text-white">{formatDate(createdAt)}</p>
                 </div>
               </div>
             )}
             {condition && (
-              <div className="card p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                  <Shield size={18} className="text-emerald-500" />
+              <div className="card p-4 flex items-center gap-4 bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-sm border border-gray-100/50 dark:border-gray-700/30 group">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Shield size={20} className="text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Condition</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{condition}</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Condition</p>
+                  <p className="text-base font-bold text-gray-900 dark:text-white">{condition}</p>
                 </div>
               </div>
             )}
@@ -175,16 +182,19 @@ export default function ProductDetails({ product, onOrder, onBack }) {
 
 
           {/* Order Button */}
-          <Button
-            variant={isSold ? 'secondary' : 'primary'}
-            size="xl"
-            fullWidth
-            disabled={isSold}
-            onClick={onOrder}
-            icon={ShoppingCart}
-          >
-            {isSold ? 'This item has been sold' : 'Place Order'}
-          </Button>
+          <div className="pt-4">
+            <Button
+              variant={isSold ? 'secondary' : 'primary'}
+              size="xl"
+              fullWidth
+              disabled={isSold}
+              onClick={onOrder}
+              icon={ShoppingCart}
+              className={`transform transition-all duration-300 ${!isSold && "hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/25"} !rounded-2xl !py-4 text-lg`}
+            >
+              {isSold ? 'This item has been sold' : 'Place Order'}
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

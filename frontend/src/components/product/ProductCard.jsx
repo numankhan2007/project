@@ -26,13 +26,13 @@ export default function ProductCard({ product, index = 0 }) {
       >
         <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-1">
           {/* Image Container with White Background */}
-          <div className="relative overflow-hidden bg-white dark:bg-gray-800">
+          <div className="relative overflow-hidden bg-white">
             {/* Square aspect ratio for consistent product photos */}
-            <div className="aspect-square p-4">
+            <div className="aspect-square p-4 bg-white">
               <img
                 src={imageUrl}
                 alt={product.title}
-                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-contain filter drop-shadow hover:drop-shadow-lg transition-all duration-500 group-hover:scale-110"
               />
             </div>
 
