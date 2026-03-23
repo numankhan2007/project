@@ -1,17 +1,17 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, KeyRound } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import OrderStatusBadge from '../order/OrderStatusBadge';
 import Button from '../common/Button';
 import { formatPrice, formatDate } from '../../utils/helpers';
 
-export default function BuyHistory({ orders, onGenerateOTP }) {
+export default function BuyHistory({ orders }) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-4xl mb-3">🛒</p>
         <p className="text-gray-500 dark:text-gray-400">You haven't bought anything yet.</p>
-        <Link to="/" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2 inline-block">
+        <Link to="/home" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2 inline-block">
           Browse products →
         </Link>
       </div>
@@ -60,16 +60,16 @@ export default function BuyHistory({ orders, onGenerateOTP }) {
                 <OrderStatusBadge status={order.order_status} />
               </div>
               <p className="text-lg font-bold gradient-text mt-1">{formatPrice(order.product_price)}</p>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap">
                 {order.order_status !== 'CANCELLED' && order.order_status !== 'COMPLETED' && (
                   <Link to={`/chat/${order.id}`}>
                     <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
                   </Link>
                 )}
-                {(order.order_status === 'CONFIRMED' || order.order_status === 'PENDING') && (
-                  <Button variant="primary" size="sm" icon={KeyRound} onClick={() => onGenerateOTP(order)}>
-                    Generate OTP
-                  </Button>
+                {order.order_status === 'CONFIRMED' && (
+                  <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1 px-2 py-1">
+                    📧 OTP will be sent to your email at delivery
+                  </span>
                 )}
                 {order.order_status === 'COMPLETED' && (
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">

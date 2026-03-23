@@ -187,16 +187,29 @@ async def send_otp_via_email(
             detail="Generate an OTP first, or the previous OTP has expired."
         )
 
-    # Get buyer name for the email
+    # Get buyer details for the email
     buyer = db.query(UserProfile).filter(
         UserProfile.register_number == order.buyer_register_number
     ).first()
     buyer_name = buyer.username if buyer else "Student"
 
+    # Use provided email, or fall back to buyer's personal email from the DB.
+    # The seller does not have access to the buyer's email address, so it is
+    # looked up server-side when the frontend omits the field.
+    email_to_send = data.email
+    if not email_to_send:
+        if buyer and buyer.personal_mail_id:
+            email_to_send = buyer.personal_mail_id
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Buyer's email address is not available. Cannot send OTP."
+            )
+
     # Send email synchronously to guarantee delivery
     try:
         await send_otp_email(
-            to_email=data.email,
+            to_email=email_to_send,
             otp_code=stored_otp,
             order_id=order.id,
             buyer_name=buyer_name,
@@ -207,4 +220,4 @@ async def send_otp_via_email(
             detail=f"Failed to send email: {str(e)}"
         )
 
-    return {"sent": True, "message": f"OTP sent to {data.email}"}
+    return {"sent": True, "message": f"OTP sent to {email_to_send}"}

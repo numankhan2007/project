@@ -20,7 +20,7 @@ export default function Dashboard() {
   const { getOrdersByBuyer, getOrdersBySeller } = useOrders();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'buy');
-  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'buyer' });
+  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'generate' });
 
   // Orders state
   const [buyOrders, setBuyOrders] = useState([]);
@@ -329,12 +329,12 @@ export default function Dashboard() {
             ) : activeTab === 'buy' ? (
               <BuyHistory
                 orders={buyOrders}
-                onGenerateOTP={(order) => setOtpModal({ open: true, order, mode: 'buyer' })}
               />
             ) : activeTab === 'sell' ? (
               <SellHistory
                 orders={sellOrders}
-                onVerifyOTP={(order) => setOtpModal({ open: true, order, mode: 'seller' })}
+                onInitiateDelivery={(order) => setOtpModal({ open: true, order, mode: 'generate' })}
+                onVerifyOTP={(order) => setOtpModal({ open: true, order, mode: 'verify' })}
               />
             ) : (
               <MyProducts onProductDeleted={handleProductDeleted} />
@@ -346,7 +346,7 @@ export default function Dashboard() {
       {/* OTP Modal */}
       <OTPModal
         isOpen={otpModal.open}
-        onClose={() => setOtpModal({ open: false, order: null, mode: 'buyer' })}
+        onClose={() => setOtpModal({ open: false, order: null, mode: 'generate' })}
         order={otpModal.order}
         mode={otpModal.mode}
       />
