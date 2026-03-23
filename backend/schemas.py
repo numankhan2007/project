@@ -189,4 +189,4 @@ class OTPVerify(BaseModel):
 
 class OTPSendEmail(BaseModel):
     orderId: int
-    email: str
+    email: Optional[str] = None  # if not provided, buyer's email is looked up from the order

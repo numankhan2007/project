@@ -10,7 +10,7 @@ const otpService = {
   },
 
   sendViaEmail: async (orderId, email) => {
-    return api.post('/otp/send-email', { orderId, email });
+    return api.post('/otp/send-email', email ? { orderId, email } : { orderId });
   },
 };
 

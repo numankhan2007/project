@@ -22,10 +22,10 @@ export default function OTPModal({ isOpen, onClose, order, mode = 'generate' }) 
     setLoading(true);
     try {
       // Step 1: Generate OTP on the backend
-      const genResponse = await otpService.generate(order.id);
+      await otpService.generate(order.id);
 
-      // Step 2: Send the OTP to buyer's email via backend
-      await otpService.sendViaEmail(order.id, order.buyer?.email || order.buyer?.personalMailId);
+      // Step 2: Send the OTP to buyer's email via backend (backend looks up buyer's email)
+      await otpService.sendViaEmail(order.id);
 
       setOtpSent(true);
       success('✅ OTP generated and sent to buyer\'s email!');

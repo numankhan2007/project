@@ -1,36 +1,81 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, MessageCircle, KeyRound, Filter, CheckCircle, XCircle, Send } from 'lucide-react';
+import { Package, MessageCircle, KeyRound, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useOrders } from '../context/OrderContext';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
 import OTPModal from '../components/order/OTPModal';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { formatPrice, formatDate } from '../utils/helpers';
 import { ORDER_STATUS } from '../constants';
+import orderService from '../services/orderService';
+
+// Helper to extract first image URL from product_image (stored as JSON string)
+function getOrderImage(order) {
+  if (order.product_image) {
+    try {
+      const images = JSON.parse(order.product_image);
+      return images[0] || '/placeholder.png';
+    } catch {
+      return order.product_image;
+    }
+  }
+  return '/placeholder.png';
+}
 
 export default function Orders() {
   const { user } = useAuth();
-  const { orders } = useOrders();
+  const [allOrders, setAllOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'seller' });
+  const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'generate' });
 
-  const userOrders = orders.filter(
-    (o) => o.buyer.username === user?.username || o.seller.username === user?.username
-  );
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [buyRes, sellRes] = await Promise.all([
+        orderService.getByBuyer(),
+        orderService.getBySeller(),
+      ]);
+      // Merge buy and sell orders, deduplicate by id
+      const buyOrders = (buyRes.data || []).map((o) => ({ ...o, _role: 'buyer' }));
+      const sellOrders = (sellRes.data || []).map((o) => ({ ...o, _role: 'seller' }));
+      const merged = [...buyOrders];
+      sellOrders.forEach((so) => {
+        if (!merged.find((o) => o.id === so.id)) {
+          merged.push(so);
+        }
+      });
+      // Sort by created_at descending
+      merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setAllOrders(merged);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleOtpModalClose = () => {
+    setOtpModal({ open: false, order: null, mode: 'generate' });
+    // Refresh orders to reflect any status changes
+    fetchOrders();
+  };
 
   const filteredOrders = statusFilter === 'all'
-    ? userOrders
-    : userOrders.filter((o) => o.status === statusFilter);
+    ? allOrders
+    : allOrders.filter((o) => o.order_status === statusFilter);
 
   const statusOptions = [
     { value: 'all', label: 'All' },
     { value: ORDER_STATUS.PENDING, label: 'Pending' },
-    { value: ORDER_STATUS.ACCEPTED, label: 'Accepted' },
-    { value: ORDER_STATUS.OTP_GENERATED, label: 'OTP Sent' },
-    { value: ORDER_STATUS.DELIVERED, label: 'Delivered' },
+    { value: ORDER_STATUS.CONFIRMED, label: 'Confirmed' },
+    { value: ORDER_STATUS.COMPLETED, label: 'Delivered' },
     { value: ORDER_STATUS.CANCELLED, label: 'Cancelled' },
   ];
 
@@ -45,7 +90,7 @@ export default function Orders() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Orders</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              {userOrders.length} total orders
+              {loading ? '...' : `${allOrders.length} total orders`}
             </p>
           </div>
         </div>
@@ -67,22 +112,26 @@ export default function Orders() {
           ))}
         </div>
 
-        {/* Orders List */}
-        {filteredOrders.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={32} className="animate-spin text-indigo-500" />
+          </div>
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-16">
             <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No orders found</h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
               {statusFilter === 'all' ? "You haven't placed or received any orders yet." : "No orders with this status."}
             </p>
-            <Link to="/" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+            <Link to="/home" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
               Browse products →
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order, i) => {
-              const isBuyer = order.buyer.username === user?.username;
+              const isBuyer = order._role === 'buyer';
               return (
                 <motion.div
                   key={order.id}
@@ -93,36 +142,45 @@ export default function Orders() {
                 >
                   <div className="flex flex-col sm:flex-row gap-4">
                     <img
-                      src={order.product.images[0]}
-                      alt={order.product.title}
-                      className="w-full sm:w-28 h-28 rounded-xl object-cover"
+                      src={getOrderImage(order)}
+                      alt={order.product_title}
+                      className="w-full sm:w-28 h-28 rounded-xl object-contain bg-white dark:bg-gray-800 p-2 border border-gray-100 dark:border-gray-700 shadow-sm flex-shrink-0"
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{order.product.title}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {order.product_title}
+                          </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            {isBuyer ? `Seller: ${order.seller.username}` : `Buyer: ${order.buyer.username}`}
-                            {' · '}{formatDate(order.createdAt)}
+                            {isBuyer
+                              ? `Seller: ${order.seller_username}`
+                              : `Buyer: ${order.buyer_username}`}
+                            {' · '}{formatDate(order.created_at)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge color={isBuyer ? 'cyan' : 'purple'}>
                             {isBuyer ? 'Buying' : 'Selling'}
                           </Badge>
-                          <OrderStatusBadge status={order.status} />
+                          <OrderStatusBadge status={order.order_status} />
                         </div>
                       </div>
-                      <p className="text-xl font-bold gradient-text mt-2">{formatPrice(order.product.price)}</p>
+                      <p className="text-xl font-bold gradient-text mt-2">
+                        {formatPrice(order.product_price)}
+                      </p>
 
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {order.status !== ORDER_STATUS.CANCELLED && order.status !== ORDER_STATUS.DELIVERED && (
-                          <Link to={`/chat/${order.id}`}>
-                            <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
-                          </Link>
-                        )}
-                        {/* Seller: Initiate Delivery (generates OTP & emails it to buyer) */}
-                        {!isBuyer && order.status === ORDER_STATUS.ACCEPTED && (
+                        {/* Chat button — available while order is active */}
+                        {order.order_status !== ORDER_STATUS.CANCELLED &&
+                          order.order_status !== ORDER_STATUS.COMPLETED && (
+                            <Link to={`/chat/${order.id}`}>
+                              <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
+                            </Link>
+                          )}
+
+                        {/* Seller: Initiate Delivery — generates OTP & emails buyer */}
+                        {!isBuyer && order.order_status === ORDER_STATUS.CONFIRMED && (
                           <Button
                             variant="primary"
                             size="sm"
@@ -132,10 +190,11 @@ export default function Orders() {
                             Initiate Delivery
                           </Button>
                         )}
-                        {/* Seller: Enter OTP received from buyer at delivery */}
-                        {!isBuyer && order.status === ORDER_STATUS.OTP_GENERATED && (
+
+                        {/* Seller: Enter OTP received from buyer — also shown for CONFIRMED */}
+                        {!isBuyer && order.order_status === ORDER_STATUS.CONFIRMED && (
                           <Button
-                            variant="primary"
+                            variant="secondary"
                             size="sm"
                             icon={KeyRound}
                             onClick={() => setOtpModal({ open: true, order, mode: 'verify' })}
@@ -143,15 +202,18 @@ export default function Orders() {
                             Enter OTP
                           </Button>
                         )}
-                        {/* Buyer: Waiting indicator */}
-                        {isBuyer && order.status === ORDER_STATUS.OTP_GENERATED && (
+
+                        {/* Buyer: Waiting indicator when order is confirmed */}
+                        {isBuyer && order.order_status === ORDER_STATUS.CONFIRMED && (
                           <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1 px-3 py-1.5">
-                            📧 OTP sent to your email
+                            📧 Waiting for seller to initiate delivery
                           </span>
                         )}
-                        {order.status === ORDER_STATUS.DELIVERED && (
+
+                        {/* Completed indicator */}
+                        {order.order_status === ORDER_STATUS.COMPLETED && (
                           <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-3 py-1.5">
-                            ✅ Delivered on {formatDate(order.deliveredAt)}
+                            ✅ Delivered on {formatDate(order.completed_at)}
                           </span>
                         )}
                       </div>
@@ -166,7 +228,7 @@ export default function Orders() {
 
       <OTPModal
         isOpen={otpModal.open}
-        onClose={() => setOtpModal({ open: false, order: null, mode: 'seller' })}
+        onClose={handleOtpModalClose}
         order={otpModal.order}
         mode={otpModal.mode}
       />
