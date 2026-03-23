@@ -275,7 +275,7 @@ export default function Register() {
       });
       await register(formData);
       showSuccess('🎉 Account created successfully!');
-      navigate('/home');
+      navigate('/home', { replace: true });
     } catch (err) {
       console.error('Registration error:', err);
       if (!err.response) {

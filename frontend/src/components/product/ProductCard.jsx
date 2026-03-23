@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Clock } from 'lucide-react';
-import Badge from '../common/Badge';
+import { MapPin } from 'lucide-react';
 import SoldRibbon from './SoldRibbon';
-import { formatPrice, formatRelativeTime } from '../../utils/helpers';
-import { CATEGORIES } from '../../constants';
+import { formatPrice } from '../../utils/helpers';
 
 export default function ProductCard({ product, index = 0 }) {
   const isSold = product.product_status === 'sold' || product.status === 'sold';
-  const category = CATEGORIES.find((c) => c.id === product.category);
   const isFree = product.price === 0;
 
   // Handle both API format and mock format for images
@@ -16,9 +13,6 @@ export default function ProductCard({ product, index = 0 }) {
 
   // Handle both API format and mock format for seller info
   const sellerLocation = product.seller_college || product.seller?.campus || 'Campus';
-
-  // Handle both API format and mock format for dates
-  const createdAt = product.created_at || product.createdAt;
 
   return (
     <motion.div
@@ -28,64 +22,51 @@ export default function ProductCard({ product, index = 0 }) {
     >
       <Link
         to={isSold ? '#' : `/product/${product.id}`}
-        className={`block card card-hover overflow-hidden group ${isSold ? 'opacity-60 pointer-events-auto cursor-not-allowed' : ''}`}
+        className={`block group ${isSold ? 'opacity-60 pointer-events-auto cursor-not-allowed' : ''}`}
       >
-        {/* Image */}
-        <div className="relative overflow-hidden">
-          {/* Desktop: aspect-video, Mobile: aspect-[3/4] */}
-          <div className="aspect-[3/4] md:aspect-video">
-            <img
-              src={imageUrl}
-              alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 bg-gray-100 dark:bg-gray-800"
-            />
+        <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-1">
+          {/* Image Container with White Background */}
+          <div className="relative overflow-hidden bg-white dark:bg-gray-800">
+            {/* Square aspect ratio for consistent product photos */}
+            <div className="aspect-square p-4">
+              <img
+                src={imageUrl}
+                alt={product.title}
+                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+              />
+            </div>
+
+            {/* Gradient Overlay at Bottom */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+
+            {/* Sold Ribbon */}
+            {isSold && <SoldRibbon />}
+
+            {/* Price Tag with Enhanced Style */}
+            <div className="absolute bottom-3 right-3">
+              <motion.span
+                whileHover={{ scale: 1.05 }}
+                className={`backdrop-blur-md font-bold text-sm px-4 py-2 rounded-full shadow-2xl border ${
+                  isFree
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-emerald-400'
+                    : 'bg-white/95 dark:bg-gray-900/95 text-gray-900 dark:text-white border-gray-200 dark:border-gray-700'
+                }`}>
+                {formatPrice(product.price)}
+              </motion.span>
+            </div>
           </div>
 
-          {/* Category Badge */}
-          {category && (
-            <div className="absolute top-3 left-3">
-              <Badge color={category?.color || 'indigo'}>
-                <span className="mr-1">{category?.icon}</span>
-                {category?.name || product.category}
-              </Badge>
+          {/* Info Section with Better Spacing */}
+          <div className="p-5 bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-800/50 dark:to-gray-900">
+            <h3 className="font-bold text-gray-900 dark:text-white text-base line-clamp-2 mb-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors min-h-[3rem]">
+              {product.title}
+            </h3>
+
+            {/* Campus Location with Icon */}
+            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+              <MapPin size={14} className="flex-shrink-0 text-indigo-500" />
+              <span className="font-medium">{sellerLocation}</span>
             </div>
-          )}
-
-          {/* Sold Ribbon */}
-          {isSold && <SoldRibbon />}
-
-          {/* Price Tag */}
-          <div className="absolute bottom-3 right-3">
-            <span className={`backdrop-blur-sm font-bold text-sm px-3 py-1.5 rounded-xl shadow-lg ${
-              isFree
-                ? 'bg-emerald-500/90 text-white'
-                : 'bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white'
-            }`}>
-              {formatPrice(product.price)}
-            </span>
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-            {product.title}
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-            {product.description}
-          </p>
-
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <MapPin size={12} />
-              <span className="truncate max-w-[100px]">{sellerLocation}</span>
-            </div>
-            {createdAt && (
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <Clock size={12} />
-                <span>{formatRelativeTime(createdAt)}</span>
-              </div>
-            )}
           </div>
         </div>
       </Link>

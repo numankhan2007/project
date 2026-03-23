@@ -3,6 +3,12 @@ import adminApi from "./api/adminApi";
 
 const AdminAuthContext = createContext(null);
 
+// Helper to clear user session
+const clearUserSession = () => {
+  localStorage.removeItem("unimart_token");
+  localStorage.removeItem("unimart_user");
+};
+
 export function AdminAuthProvider({ children }) {
   const [admin, setAdmin] = useState(() => {
     try {
@@ -15,6 +21,10 @@ export function AdminAuthProvider({ children }) {
 
   const login = useCallback(async (username, password) => {
     const { data } = await adminApi.post("/admin/auth/login", { username, password });
+
+    // Clear user session when admin logs in (mutual exclusivity)
+    clearUserSession();
+
     localStorage.setItem("unimart_admin_token", data.access_token);
     localStorage.setItem("unimart_admin", JSON.stringify({
       username: data.admin_username,

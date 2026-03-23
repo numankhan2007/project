@@ -5,12 +5,10 @@ import { ShoppingCart, AlertCircle, CheckCircle, MessageCircle, Shield, Hash } f
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { formatPrice } from '../../utils/helpers';
-import { useAuth } from '../../context/AuthContext';
 import { useOrders } from '../../context/OrderContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 export default function OrderModal({ isOpen, onClose, product }) {
-  const { user } = useAuth();
   const { createOrder } = useOrders();
   const { success } = useNotifications();
   const navigate = useNavigate();
@@ -23,13 +21,15 @@ export default function OrderModal({ isOpen, onClose, product }) {
   const handleOrder = async () => {
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
-      const newOrder = createOrder(product, user);
+      const newOrder = await createOrder(product.id);
       setPlacedOrder(newOrder);
       setOrderPlaced(true);
       success(`Order placed for "${product.title}"!`);
     } catch (err) {
       console.error(err);
+      // Show error message to user
+      const errorMessage = err.response?.data?.detail || 'Failed to place order. Please try again.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -62,13 +62,13 @@ export default function OrderModal({ isOpen, onClose, product }) {
             {/* Product Summary */}
             <div className="flex gap-4">
               <img
-                src={product.images[0]}
+                src={product.image_urls?.[0] || product.image_url || '/placeholder.png'}
                 alt={product.title}
-                className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+                className="w-24 h-24 rounded-xl object-contain flex-shrink-0 bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700"
               />
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">{product.title}</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{product.condition} · {product.seller.campus}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{product.seller_college || 'Campus'}</p>
                 <p className="text-xl font-bold gradient-text mt-2">{formatPrice(product.price)}</p>
               </div>
             </div>

@@ -18,6 +18,12 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, [token]);
 
+  // Helper to clear admin session
+  const clearAdminSession = () => {
+    localStorage.removeItem('unimart_admin_token');
+    localStorage.removeItem('unimart_admin');
+  };
+
   // Login via backend API
   const login = async (identifier, password) => {
     try {
@@ -25,6 +31,9 @@ export function AuthProvider({ children }) {
         studentId: identifier,
         password: password,
       });
+
+      // Clear admin session when user logs in (mutual exclusivity)
+      clearAdminSession();
 
       const authToken = data.token;
       const userData = data.user;
@@ -50,6 +59,9 @@ export function AuthProvider({ children }) {
         personal_mail_id: data.email,
         phone_number: data.phone || null,
       });
+
+      // Clear admin session when user registers (mutual exclusivity)
+      clearAdminSession();
 
       const authToken = res.token;
       const userData = res.user;

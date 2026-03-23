@@ -70,18 +70,16 @@ export const maskEmail = (email) => {
 
 export const ORDER_STATUS = {
   PENDING: 'PENDING',
-  ACCEPTED: 'CONFIRMED',
-  OTP_GENERATED: 'OTP_GENERATED',
-  DELIVERED: 'COMPLETED',
+  CONFIRMED: 'CONFIRMED',
+  COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
 };
 
 export const ORDER_STATUS_LABELS = {
-  [ORDER_STATUS.PENDING]: { label: 'Pending', color: 'amber' },
-  [ORDER_STATUS.ACCEPTED]: { label: 'Accepted', color: 'cyan' },
-  [ORDER_STATUS.OTP_GENERATED]: { label: 'OTP Sent', color: 'purple' },
-  [ORDER_STATUS.DELIVERED]: { label: 'Delivered', color: 'emerald' },
-  [ORDER_STATUS.CANCELLED]: { label: 'Cancelled', color: 'rose' },
+  PENDING: { label: 'Pending', color: 'amber' },
+  CONFIRMED: { label: 'Confirmed', color: 'cyan' },
+  COMPLETED: { label: 'Delivered', color: 'emerald' },
+  CANCELLED: { label: 'Cancelled', color: 'rose' },
 };
 
 export const MOCK_USER = null;

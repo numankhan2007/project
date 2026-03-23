@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
+import { Shield, Loader2 } from 'lucide-react';
 import ChatBox from '../components/chat/ChatBox';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
@@ -11,33 +12,72 @@ export default function ChatPage() {
   const { orderId } = useParams();
   const { user } = useAuth();
   const { getOrderById } = useOrders();
-  const { getMessagesByOrder, sendMessage } = useChat();
+  const { messages, loadMessages, sendMessage, loading: chatLoading } = useChat();
 
-  const order = getOrderById(orderId);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!order) {
+  // Fetch order and messages when page loads
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const orderData = await getOrderById(orderId);
+        setOrder(orderData);
+        await loadMessages(orderId);
+      } catch (err) {
+        console.error('Failed to load chat:', err);
+        setError(err?.response?.data?.detail || 'Failed to load chat');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [orderId, getOrderById, loadMessages]);
+
+  if (loading) {
+    return (
+      <div className="section-padding page-padding text-center flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="animate-spin text-indigo-500 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Loading chat...</p>
+      </div>
+    );
+  }
+
+  if (error || !order) {
     return (
       <div className="section-padding page-padding text-center">
         <p className="text-6xl mb-4">🔒</p>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Chat Unavailable</h2>
         <p className="text-gray-500 dark:text-gray-400">
-          This chat doesn't exist or the order was not found. You can only chat after placing an order.
+          {error || "This chat doesn't exist or the order was not found. You can only chat after placing an order."}
         </p>
       </div>
     );
   }
 
-  const isBuyer = order.buyer.username === user?.username;
-  const otherUser = isBuyer ? order.seller.username : order.buyer.username;
-  const messages = getMessagesByOrder(orderId);
+  const isBuyer = order.buyer_register_number === user?.studentId;
+  const otherUser = isBuyer ? order.seller_username : order.buyer_username;
+  const orderMessages = messages[orderId] || [];
 
   // Chat is read-only when the order is completed or cancelled
-  const isReadOnly = order.status === ORDER_STATUS.DELIVERED || order.status === ORDER_STATUS.CANCELLED;
+  const isReadOnly = order.order_status === ORDER_STATUS.COMPLETED || order.order_status === ORDER_STATUS.CANCELLED;
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     if (!isReadOnly) {
-      sendMessage(orderId, user.username, text);
+      await sendMessage(orderId, text);
     }
+  };
+
+  // Format order for ChatBox component
+  const formattedOrder = {
+    ...order,
+    status: order.order_status,
+    product: order.product || { title: order.product_title },
+    buyer: { username: order.buyer_username },
+    seller: { username: order.seller_username },
   };
 
   return (
@@ -57,12 +97,13 @@ export default function ChatPage() {
         </div>
 
         <ChatBox
-          messages={messages}
-          order={order}
-          currentUser={user?.username}
+          messages={orderMessages}
+          order={formattedOrder}
+          currentUser={user?.studentId}
           otherUser={otherUser}
           onSend={handleSend}
           readOnly={isReadOnly}
+          loading={chatLoading}
         />
       </motion.div>
     </div>

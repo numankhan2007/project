@@ -4,7 +4,6 @@ import { MessageCircle, KeyRound } from 'lucide-react';
 import OrderStatusBadge from '../order/OrderStatusBadge';
 import Button from '../common/Button';
 import { formatPrice, formatDate } from '../../utils/helpers';
-import { ORDER_STATUS } from '../../constants';
 
 export default function SellHistory({ orders, onVerifyOTP }) {
   if (orders.length === 0) {
@@ -19,6 +18,19 @@ export default function SellHistory({ orders, onVerifyOTP }) {
     );
   }
 
+  // Helper to get the first image from order data
+  const getOrderImage = (order) => {
+    if (order.product_image) {
+      try {
+        const images = JSON.parse(order.product_image);
+        return images[0] || '/placeholder.png';
+      } catch {
+        return order.product_image;
+      }
+    }
+    return '/placeholder.png';
+  };
+
   return (
     <div className="space-y-4">
       {orders.map((order, i) => (
@@ -31,37 +43,37 @@ export default function SellHistory({ orders, onVerifyOTP }) {
         >
           <div className="flex gap-4">
             <img
-              src={order.product.images[0]}
-              alt={order.product.title}
-              className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+              src={getOrderImage(order)}
+              alt={order.product_title}
+              className="w-20 h-20 rounded-xl object-contain flex-shrink-0 bg-gray-100 dark:bg-gray-800 p-1"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                    {order.product.title}
+                    {order.product_title}
                   </h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Buyer: {order.buyer.username} · {formatDate(order.createdAt)}
+                    Buyer: {order.buyer_username} · {formatDate(order.created_at)}
                   </p>
                 </div>
-                <OrderStatusBadge status={order.status} />
+                <OrderStatusBadge status={order.order_status} />
               </div>
-              <p className="text-lg font-bold gradient-text mt-1">{formatPrice(order.product.price)}</p>
+              <p className="text-lg font-bold gradient-text mt-1">{formatPrice(order.product_price)}</p>
               <div className="flex gap-2 mt-3">
-                {order.status !== ORDER_STATUS.CANCELLED && order.status !== ORDER_STATUS.DELIVERED && (
+                {order.order_status !== 'CANCELLED' && order.order_status !== 'COMPLETED' && (
                   <Link to={`/chat/${order.id}`}>
                     <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
                   </Link>
                 )}
-                {order.status === ORDER_STATUS.OTP_GENERATED && (
+                {order.order_status === 'CONFIRMED' && (
                   <Button variant="primary" size="sm" icon={KeyRound} onClick={() => onVerifyOTP(order)}>
                     Enter OTP
                   </Button>
                 )}
-                {order.status === ORDER_STATUS.DELIVERED && (
+                {order.order_status === 'COMPLETED' && (
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    ✅ Delivered on {formatDate(order.deliveredAt)}
+                    ✅ Delivered on {formatDate(order.completed_at)}
                   </span>
                 )}
               </div>

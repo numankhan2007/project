@@ -1,33 +1,64 @@
-import { createContext, useContext, useState } from 'react';
-import { MOCK_MESSAGES } from '../constants';
-import { generateId } from '../utils/helpers';
+import { createContext, useContext, useState, useCallback } from 'react';
+import chatService from '../services/chatService';
 
 const ChatContext = createContext(null);
 
 export function ChatProvider({ children }) {
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const getMessagesByOrder = (orderId) => {
-    return messages.filter((m) => m.orderId === orderId);
-  };
+  const loadMessages = useCallback(async (orderId) => {
+    setLoading(true);
+    try {
+      const response = await chatService.getMessages(orderId);
+      setMessages((prev) => ({
+        ...prev,
+        [orderId]: response.data.map((m) => ({
+          id: m.id,
+          orderId: m.orderId,
+          sender: m.sender_register_number,
+          text: m.message,
+          timestamp: m.sent_at,
+        })),
+      }));
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const sendMessage = (orderId, sender, text) => {
-    const newMessage = {
-      id: generateId('msg'),
-      orderId,
-      sender,
-      text,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, newMessage]);
-    return newMessage;
-  };
+  const sendMessage = useCallback(async (orderId, text) => {
+    setLoading(true);
+    try {
+      const response = await chatService.sendMessage(orderId, text);
+      const newMessage = {
+        id: response.data.id,
+        orderId: response.data.orderId,
+        sender: response.data.sender_register_number,
+        text: response.data.message,
+        timestamp: response.data.sent_at,
+      };
+      setMessages((prev) => ({
+        ...prev,
+        [orderId]: [...(prev[orderId] || []), newMessage],
+      }));
+      return newMessage;
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
     <ChatContext.Provider
       value={{
         messages,
-        getMessagesByOrder,
+        loading,
+        loadMessages,
         sendMessage,
       }}
     >

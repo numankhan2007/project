@@ -1,0 +1,63 @@
+===============================================
+   UNIMART - Manual Run Commands (Windows)
+===============================================
+
+==================== BACKEND ====================
+
+# Step 1: Open terminal and navigate to backend folder
+cd D:\CODE\UNIMART\project\backend
+
+# Step 2: Create virtual environment (first time only)
+python -m venv venv
+
+# Step 3: Activate virtual environment
+venv\Scripts\activate
+
+# Step 4: Install dependencies (first time or after requirements change)
+pip install -r requirements.txt
+
+# Step 5: Run the backend server
+uvicorn main:app --reload --port 8000
+
+# Backend will be available at: http://localhost:8000
+# API docs at: http://localhost:8000/docs
+
+
+==================== FRONTEND ====================
+
+# Step 1: Open NEW terminal and navigate to frontend folder
+cd D:\CODE\UNIMART\project\frontend
+
+# Step 2: Install dependencies (first time only)
+npm install
+
+# Step 3: Run the frontend dev server
+npm run dev
+
+# Frontend will be available at: http://localhost:5173
+
+
+==================== QUICK START ====================
+
+--- Terminal 1 (Backend): ---
+cd D:\CODE\UNIMART\project\backend
+venv\Scripts\activate
+uvicorn main:app --reload --port 8000
+
+--- Terminal 2 (Frontend): ---
+cd D:\CODE\UNIMART\project\frontend
+npm run dev
+
+
+==================== DEACTIVATE VENV ====================
+
+# To deactivate virtual environment when done:
+deactivate
+
+
+==================== NOTES ====================
+
+- Make sure .env files are configured in both backend and frontend
+- Backend uses FastAPI + SQLAlchemy + PostgreSQL
+- Frontend uses React + Vite + TailwindCSS
+- Both servers must be running for full functionality

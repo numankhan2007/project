@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, MapPin, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, GraduationCap, X, Check, Info, Lock, Save, Tag } from 'lucide-react';
+import { User, MapPin, ShoppingCart, Package, BadgeCheck, Pencil, Camera, Mail, Phone, GraduationCap, X, Check, Info, Lock, Save, Tag, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrderContext';
 import HistoryTabs from '../components/dashboard/HistoryTabs';
@@ -10,8 +10,8 @@ import SellHistory from '../components/dashboard/SellHistory';
 import MyProducts from '../components/dashboard/MyProducts';
 import OTPModal from '../components/order/OTPModal';
 import Badge from '../components/common/Badge';
-import { MOCK_PRODUCTS } from '../constants';
 import { getInitials, formatDate } from '../utils/helpers';
+import api from '../services/api';
 
 export default function Dashboard() {
   const { user, updateProfile } = useAuth();
@@ -19,6 +19,57 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'buy');
   const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'buyer' });
+
+  // Orders state
+  const [buyOrders, setBuyOrders] = useState([]);
+  const [sellOrders, setSellOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Products state
+  const [myProductsCount, setMyProductsCount] = useState(0);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoadingOrders(true);
+      try {
+        const [buyData, sellData] = await Promise.all([
+          getOrdersByBuyer(),
+          getOrdersBySeller()
+        ]);
+        setBuyOrders(buyData || []);
+        setSellOrders(sellData || []);
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+    fetchOrders();
+  }, [getOrdersByBuyer, getOrdersBySeller]);
+
+  // Fetch user's products count
+  useEffect(() => {
+    const fetchMyProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        const response = await api.get('/products/my');
+        setMyProductsCount(response.data?.length || 0);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+        setMyProductsCount(0);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchMyProducts();
+  }, []);
+
+  // Callback when a product is deleted
+  const handleProductDeleted = () => {
+    setMyProductsCount((prev) => Math.max(0, prev - 1));
+  };
 
   // Profile picture
   const fileInputRef = useRef(null);
@@ -34,10 +85,6 @@ export default function Dashboard() {
     email: user?.personalMailId || '',
     phone: user?.phoneNumber || '',
   });
-
-  const buyOrders = getOrdersByBuyer(user?.username);
-  const sellOrders = getOrdersBySeller(user?.username);
-  const myProducts = MOCK_PRODUCTS.filter((p) => p.seller.username === user?.username);
 
   // Close popover on outside click
   useEffect(() => {
@@ -251,21 +298,27 @@ export default function Dashboard() {
               <div className="w-10 h-10 mx-auto rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-2">
                 <ShoppingCart size={18} className="text-indigo-500" />
               </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{buyOrders.length}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                {loadingOrders ? <Loader2 size={18} className="animate-spin mx-auto" /> : buyOrders.length}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Purchases</p>
             </div>
             <div className="text-center">
               <div className="w-10 h-10 mx-auto rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mb-2">
                 <Package size={18} className="text-purple-500" />
               </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{sellOrders.length}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                {loadingOrders ? <Loader2 size={18} className="animate-spin mx-auto" /> : sellOrders.length}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Sales</p>
             </div>
             <div className="text-center">
               <div className="w-10 h-10 mx-auto rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-2">
                 <Tag size={18} className="text-emerald-500" />
               </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{myProducts.length}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                {loadingProducts ? <Loader2 size={18} className="animate-spin mx-auto" /> : myProductsCount}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">My Products</p>
             </div>
           </div>
@@ -276,11 +329,13 @@ export default function Dashboard() {
           <HistoryTabs
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            buyCount={buyOrders.length}
-            sellCount={sellOrders.length}
           />
           <div className="mt-4">
-            {activeTab === 'buy' ? (
+            {loadingOrders ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+              </div>
+            ) : activeTab === 'buy' ? (
               <BuyHistory
                 orders={buyOrders}
                 onGenerateOTP={(order) => setOtpModal({ open: true, order, mode: 'buyer' })}
@@ -291,7 +346,7 @@ export default function Dashboard() {
                 onVerifyOTP={(order) => setOtpModal({ open: true, order, mode: 'seller' })}
               />
             ) : (
-              <MyProducts />
+              <MyProducts onProductDeleted={handleProductDeleted} />
             )}
           </div>
         </div>

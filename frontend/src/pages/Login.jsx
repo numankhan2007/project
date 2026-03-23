@@ -32,7 +32,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(formData.identifier, formData.password);
-      navigate('/home');
+      navigate('/home', { replace: true });
     } catch (err) {
       if (!err.response) {
         showError('❌ Server Error: Unable to connect to the backend.');

@@ -67,17 +67,23 @@ def send_message(
             order.seller_register_number != current_user.register_number):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    # Chat lifecycle: only active when CONFIRMED
+    # Chat lifecycle: active when PENDING or CONFIRMED
     if order.order_status == OrderStatus.COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This chat is read-only. The transaction has been completed."
         )
 
-    if order.order_status != OrderStatus.CONFIRMED:
+    if order.order_status == OrderStatus.CANCELLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chat is only available after the order is confirmed."
+            detail="This chat is read-only. The order has been cancelled."
+        )
+
+    if order.order_status not in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Chat is not available for this order status."
         )
 
     new_message = ChatMessage(

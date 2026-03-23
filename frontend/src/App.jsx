@@ -10,6 +10,12 @@ import Footer from './components/layout/Footer';
 import MobileNav from './components/layout/MobileNav';
 import Toast from './components/common/Toast';
 import AppRoutes from './routes/AppRoutes';
+import { useBackNavigation } from './hooks/useBackNavigation';
+
+function BackNavigationHandler() {
+  useBackNavigation();
+  return null;
+}
 
 function AppLayout() {
   const location = useLocation();
@@ -18,11 +24,17 @@ function AppLayout() {
 
   // Don't show main app layout (navbar/footer) on admin pages
   if (isAdminPage) {
-    return <AppRoutes />;
+    return (
+      <>
+        <BackNavigationHandler />
+        <AppRoutes />
+      </>
+    );
   }
 
   return (
     <div className="flex flex-col min-h-screen">
+      <BackNavigationHandler />
       {!isAuthPage && <Navbar />}
       <main className={`flex-1 ${!isAuthPage ? 'pt-16 pb-16 md:pb-0' : ''}`}>
         <AppRoutes />

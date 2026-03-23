@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
     try {
       await login(username, password);
       setSuccess(true);
-      setTimeout(() => navigate("/admin"), 600);
+      setTimeout(() => navigate("/admin", { replace: true }), 600);
     } catch (err) {
       const msg = err.response?.data?.detail || "ACCESS DENIED — Invalid credentials";
       setError(msg);

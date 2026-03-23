@@ -6,10 +6,15 @@ import OrderStatusBadge from '../order/OrderStatusBadge';
 export default function ChatHeader({ order, otherUser }) {
   const navigate = useNavigate();
 
+  const handleBack = () => {
+    // Navigate to orders page instead of browser history
+    navigate('/orders');
+  };
+
   return (
     <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
       <button
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
         className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
       >
         <ArrowLeft size={20} />

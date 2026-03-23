@@ -45,6 +45,7 @@ export default function SellProduct() {
   };
 
   const removeImage = (index) => {
+    URL.revokeObjectURL(previewImages[index]);
     setPreviewImages((prev) => prev.filter((_, i) => i !== index));
     setFormData((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
@@ -138,8 +139,8 @@ export default function SellProduct() {
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {previewImages.map((img, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 group">
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 group bg-white dark:bg-gray-800">
+                  <img src={img} alt="" className="w-full h-full object-contain p-3" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}

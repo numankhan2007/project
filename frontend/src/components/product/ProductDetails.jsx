@@ -64,12 +64,12 @@ export default function ProductDetails({ product, onOrder, onBack }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Image Section */}
         <div className="space-y-4">
-          <div className="relative card overflow-hidden">
+          <div className="relative card overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <div className="aspect-square">
               <img
                 src={images[selectedImage]}
                 alt={product.title}
-                className="w-full h-full object-cover bg-gray-100 dark:bg-gray-800"
+                className="w-full h-full object-contain p-6"
               />
             </div>
             {isSold && <SoldRibbon />}
@@ -80,10 +80,10 @@ export default function ProductDetails({ product, onOrder, onBack }) {
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all
-                    ${i === selectedImage ? 'border-indigo-500 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all bg-white dark:bg-gray-800
+                    ${i === selectedImage ? 'border-indigo-500 shadow-lg' : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'}`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" className="w-full h-full object-contain p-2" />
                 </button>
               ))}
             </div>
@@ -144,9 +144,9 @@ export default function ProductDetails({ product, onOrder, onBack }) {
               <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
                 <MapPin size={18} className="text-purple-500" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Campus</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[120px]">{sellerCampus}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{sellerCampus}</p>
               </div>
             </div>
             {createdAt && (

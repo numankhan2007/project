@@ -1,85 +1,77 @@
-import { createContext, useContext, useState } from 'react';
-import { MOCK_ORDERS, ORDER_STATUS } from '../constants';
-import { generateOTP, generateId } from '../utils/helpers';
+import { createContext, useContext, useState, useCallback } from 'react';
+import orderService from '../services/orderService';
+import otpService from '../services/otpService';
 
 const OrderContext = createContext(null);
 
 export function OrderProvider({ children }) {
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrders] = useState([]);
 
-  const createOrder = (product, buyer) => {
-    const newOrder = {
-      id: generateId('order'),
-      product,
-      buyer: { username: buyer.username, campus: buyer.campus },
-      seller: product.seller,
-      status: ORDER_STATUS.PENDING,
-      otp: null,
-      createdAt: new Date().toISOString(),
-      deliveredAt: null,
-    };
+  const createOrder = useCallback(async (productId) => {
+    const response = await orderService.create({ product_id: productId });
+    const newOrder = response.data;
     setOrders((prev) => [newOrder, ...prev]);
     return newOrder;
-  };
+  }, []);
 
-  const acceptOrder = (orderId) => {
+  const acceptOrder = useCallback(async (orderId) => {
+    const response = await orderService.updateStatus(orderId, 'CONFIRMED');
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId
-          ? { ...order, status: ORDER_STATUS.ACCEPTED }
+          ? { ...order, order_status: 'CONFIRMED' }
           : order
       )
     );
-  };
+    return response.data;
+  }, []);
 
-  const generateOrderOTP = (orderId) => {
-    const otp = generateOTP();
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId
-          ? { ...order, status: ORDER_STATUS.OTP_GENERATED, otp }
-          : order
-      )
-    );
-    return otp;
-  };
+  const generateOrderOTP = useCallback(async (orderId) => {
+    const response = await otpService.generate(orderId);
+    return response.data;
+  }, []);
 
-  const verifyOTP = (orderId, enteredOTP) => {
-    const order = orders.find((o) => o.id === orderId);
-    if (order && order.otp === enteredOTP) {
+  const verifyOTP = useCallback(async (orderId, enteredOTP) => {
+    const response = await otpService.verify(orderId, enteredOTP);
+    if (response.data.verified) {
       setOrders((prev) =>
         prev.map((o) =>
           o.id === orderId
-            ? { ...o, status: ORDER_STATUS.DELIVERED, deliveredAt: new Date().toISOString() }
+            ? { ...o, order_status: 'COMPLETED', completed_at: new Date().toISOString() }
             : o
         )
       );
-      return true;
     }
-    return false;
-  };
+    return response.data;
+  }, []);
 
-  const cancelOrder = (orderId) => {
+  const cancelOrder = useCallback(async (orderId) => {
+    const response = await orderService.updateStatus(orderId, 'CANCELLED');
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId
-          ? { ...order, status: ORDER_STATUS.CANCELLED }
+          ? { ...order, order_status: 'CANCELLED' }
           : order
       )
     );
-  };
+    return response.data;
+  }, []);
 
-  const getOrdersByBuyer = (username) => {
-    return orders.filter((o) => o.buyer.username === username);
-  };
+  const getOrdersByBuyer = useCallback(async () => {
+    const response = await orderService.getByBuyer();
+    setOrders(response.data);
+    return response.data;
+  }, []);
 
-  const getOrdersBySeller = (username) => {
-    return orders.filter((o) => o.seller.username === username);
-  };
+  const getOrdersBySeller = useCallback(async () => {
+    const response = await orderService.getBySeller();
+    return response.data;
+  }, []);
 
-  const getOrderById = (orderId) => {
-    return orders.find((o) => o.id === orderId);
-  };
+  const getOrderById = useCallback(async (orderId) => {
+    const response = await orderService.getById(orderId);
+    return response.data;
+  }, []);
 
   return (
     <OrderContext.Provider
