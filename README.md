@@ -29,6 +29,7 @@
 - [Environment Variables](#-environment-variables)
 - [API Documentation](#-api-documentation)
 - [Security Architecture](#-security-architecture)
+- [Database Schema](#-database-schema)
 - [Admin Module](#-admin-module)
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
@@ -57,7 +58,15 @@ Students cannot register unless their register number exists in the **Official M
 1. Enter register number → system validates against registry
 2. OTP sent to **official university email** (not personal email)
 3. Email verified → student fills personal credentials
-4. Account created → JWT issued
+4. Account created → JWT + Refresh token issued (7-day expiry)
+
+### Multi-Image Product Upload
+Products support multiple images with advanced features:
+1. **Cloudinary integration** — images stored in cloud with CDN delivery
+2. **Image cropper** — built-in crop tool before upload
+3. **Position ordering** — images displayed in specified order
+4. **Validation** — max file size (10MB), allowed formats (JPEG, PNG, WEBP)
+5. **Optimized storage** — `ProductImage` table with cascade deletes
 
 ### OTP Delivery Handshake
 Every physical transaction uses a secure handshake mechanism:
@@ -74,10 +83,18 @@ Chat is only available between buyer and seller **within an active order**. No c
 
 ### Admin Control Panel
 Separate admin module with its own JWT, audit trail, and full management capabilities:
-- User management (suspend, reinstate, delete)
-- Product moderation (flag, remove, override status)
-- Order oversight (override status with mandatory reason)
-- Full audit log of every admin action
+- **Dashboard** — Real-time statistics with 7-day growth trends
+- **User management** — Suspend, reinstate, soft-delete with mandatory reasons
+- **Product moderation** — Flag products, override status, hard delete
+- **Order oversight** — Override order status with mandatory reason logging
+- **Audit logs** — Complete trail of every admin action with IP address and timestamp
+- **Separate authentication** — Admin JWT uses different secret than student tokens
+
+### Background Task Automation
+APScheduler runs automated cleanup tasks:
+- **Product cleanup** — Auto-delete SOLD_OUT products after 7 days
+- **Chat expiry** — Remove chat messages from completed orders after 24 hours
+- **Health checks** — Scheduler lifespan tied to FastAPI app lifecycle
 
 ### Landing Page
 - Rainbow tube cursor (WebGL, Three.js-powered)
@@ -92,35 +109,36 @@ Separate admin module with its own JWT, audit trail, and full management capabil
 ### Frontend
 | Technology | Version | Purpose |
 |---|---|---|
-| React | 18 | UI framework |
-| Vite | 4+ | Build tool & dev server |
-| TailwindCSS | 3 | Utility-first styling |
-| Framer Motion | Latest | UI animations |
-| React Router DOM | 6 | Client-side routing |
-| Axios | Latest | HTTP client with interceptors |
-| Three.js | Latest | WebGL tube cursor effect |
-| Lucide React | Latest | Icon library |
+| React | 18.3 | UI framework |
+| Vite | 5.4+ | Build tool & dev server |
+| TailwindCSS | 3.4 | Utility-first styling |
+| Framer Motion | 11.2+ | UI animations & transitions |
+| React Router DOM | 6.23+ | Client-side routing |
+| Axios | 1.7+ | HTTP client with interceptors |
+| Three.js | 0.183+ | WebGL tube cursor effect |
+| Lucide React | 0.395+ | Icon library |
 
 ### Backend
 | Technology | Version | Purpose |
 |---|---|---|
-| FastAPI | 0.100+ | Async Python API framework |
-| SQLAlchemy | 2.0 | ORM |
-| Alembic | Latest | Database migrations |
+| FastAPI | 0.134+ | Async Python API framework |
+| SQLAlchemy | 2.0 | ORM with connection pooling |
+| Alembic | 1.13+ | Database migrations |
 | Pydantic | v2 | Request/response validation |
-| PyJWT | Latest | JWT token generation |
-| passlib[bcrypt] | Latest | Password hashing |
-| APScheduler | Latest | Background task scheduling |
-| Redis (aioredis) | Latest | OTP storage with TTL |
+| PyJWT | 2.8+ | JWT token generation (student + admin) |
+| passlib[bcrypt] | 1.7+ | Password hashing (bcrypt) |
+| APScheduler | 3.10+ | Background task scheduling |
+| Redis | 5.0+ | OTP storage, rate limiting |
+| Cloudinary | 1.36+ | Image upload and storage |
 
 ### Infrastructure
 | Technology | Purpose |
 |---|---|
-| PostgreSQL 14+ | Primary relational database |
-| Redis 7+ | OTP storage, rate limiting counters |
-| SMTP (smtplib) | Email delivery for OTPs |
+| PostgreSQL 14+ | Primary relational database with connection pooling |
+| Redis 7+ | OTP storage (10-min TTL), rate limiting counters |
+| SMTP (smtplib) | Email delivery for OTPs and notifications |
+| Cloudinary | Image hosting and CDN |
 | Vercel | Frontend deployment |
-| Alembic | Database migration management |
 
 ---
 
@@ -130,22 +148,37 @@ Separate admin module with its own JWT, audit trail, and full management capabil
 unimart/
 ├── backend/
 │   ├── routers/
-│   │   ├── auth.py          # Registration, login, JWT
-│   │   ├── products.py      # Product CRUD, search
+│   │   ├── auth.py          # Registration, login, JWT, OTP verification
+│   │   ├── products.py      # Product CRUD, search, filtering
 │   │   ├── orders.py        # Order lifecycle management
 │   │   ├── otp.py           # OTP generation & verification
-│   │   └── admin.py         # Admin endpoints
+│   │   ├── chat.py          # Order-scoped messaging
+│   │   ├── admin.py         # Admin endpoints (20+ endpoints)
+│   │   └── upload.py        # Cloudinary image upload
 │   ├── services/
 │   │   └── email_service.py # Async SMTP email dispatch
-│   ├── admin_models.py      # AdminAccount, AuditLog tables
-│   ├── admin_auth.py        # Admin JWT (separate from student JWT)
-│   ├── admin_router.py      # 20 admin endpoints
+│   ├── middleware/
+│   │   └── rate_limit.py    # Redis-based rate limiting
+│   ├── alembic/
+│   │   ├── versions/        # Migration files
+│   │   ├── env.py           # Migration environment
+│   │   └── README           # Alembic documentation
+│   ├── admin_models.py      # AdminAccount, AdminAuditLog tables
+│   ├── admin_auth.py        # Separate admin JWT authentication
+│   ├── admin_schemas.py     # Admin Pydantic schemas
 │   ├── models.py            # SQLAlchemy ORM models
 │   ├── schemas.py           # Pydantic validation schemas
 │   ├── database.py          # PostgreSQL connection & session
+│   ├── dependencies.py      # FastAPI dependencies
+│   ├── security.py          # JWT creation, bcrypt hashing
+│   ├── redis_client.py      # Redis connection & health checks
+│   ├── scheduler.py         # APScheduler background tasks
+│   ├── seed_data.py         # Database seeding from CSV
 │   ├── main.py              # FastAPI app, CORS, lifespan
 │   ├── requirements.txt     # Python dependencies
-│   └── .env                 # Environment variables (not committed)
+│   ├── .env.example         # Environment variables template
+│   ├── alembic.ini          # Alembic configuration
+│   └── official_data.csv    # University registry seed data
 │
 ├── frontend/
 │   ├── public/
@@ -154,30 +187,78 @@ unimart/
 │   │   ├── pages/
 │   │   │   ├── Landing.jsx     # Landing page (tube cursor, RGB title)
 │   │   │   ├── Login.jsx       # Student login
-│   │   │   ├── Register.jsx    # Multi-step registration
-│   │   │   ├── Dashboard.jsx   # Product marketplace
+│   │   │   ├── Register.jsx    # Multi-step registration + OTP
+│   │   │   ├── Home.jsx        # Product marketplace
+│   │   │   ├── Dashboard.jsx   # User dashboard
 │   │   │   ├── ProductPage.jsx # Single product view
+│   │   │   ├── SellProduct.jsx # Product listing with multi-image upload
 │   │   │   ├── Orders.jsx      # Order management
-│   │   │   └── ChatPage.jsx    # Order-scoped messaging
+│   │   │   ├── ChatPage.jsx    # Order-scoped messaging
+│   │   │   ├── AboutUs.jsx     # About page
+│   │   │   ├── HelpCenter.jsx  # Help page
+│   │   │   ├── TermsAndConditions.jsx
+│   │   │   └── NotFound.jsx    # 404 page
+│   │   ├── admin/
+│   │   │   ├── pages/
+│   │   │   │   ├── AdminLoginPage.jsx
+│   │   │   │   ├── Dashboard.jsx
+│   │   │   │   ├── Users.jsx
+│   │   │   │   ├── Products.jsx
+│   │   │   │   ├── Orders.jsx
+│   │   │   │   └── AuditLogs.jsx
+│   │   │   ├── components/
+│   │   │   │   ├── AdminLayout.jsx
+│   │   │   │   ├── AdminTable.jsx
+│   │   │   │   ├── AdminProtectedRoute.jsx
+│   │   │   │   └── AdminToast.jsx
+│   │   │   └── services/
+│   │   │       └── adminApi.js
 │   │   ├── components/
-│   │   │   ├── TubesCursor.js  # WebGL rainbow cursor (landing only)
-│   │   │   └── ...             # Shared UI components
+│   │   │   ├── common/        # Badge, Button, Input, Modal, Toast
+│   │   │   ├── chat/          # ChatBox, ChatInput, MessageBubble
+│   │   │   ├── dashboard/     # BuyHistory, SellHistory, ProfileDropdown
+│   │   │   ├── layout/        # Navbar, Footer, ProtectedRoute
+│   │   │   ├── order/         # OrderModal, OTPModal, OrderStatusBadge
+│   │   │   ├── product/       # ProductCard, ProductGrid, ProductFilters
+│   │   │   ├── TubesCursor.js # WebGL rainbow cursor (Three.js)
+│   │   │   ├── ImageCropper.jsx # Advanced image cropping
+│   │   │   └── ThemeToggle.jsx
 │   │   ├── context/
-│   │   │   ├── AuthContext.jsx  # JWT auth state
-│   │   │   ├── ThemeContext.jsx # Dark/light theme
-│   │   │   └── OrderContext.jsx # Order state
+│   │   │   ├── AuthContext.jsx       # User authentication state
+│   │   │   ├── AdminAuthContext.jsx  # Admin authentication state
+│   │   │   ├── ChatContext.jsx       # Chat state
+│   │   │   ├── OrderContext.jsx      # Order state
+│   │   │   ├── ThemeContext.jsx      # Theme persistence
+│   │   │   └── NotificationContext.jsx
 │   │   ├── services/
-│   │   │   └── api.js          # Axios instance with interceptors
+│   │   │   ├── api.js           # Axios instance with interceptors
+│   │   │   ├── authService.js   # Auth API calls
+│   │   │   ├── productService.js
+│   │   │   ├── orderService.js
+│   │   │   ├── chatService.js
+│   │   │   └── otpService.js
 │   │   ├── routes/
-│   │   │   └── AppRoutes.jsx   # Route definitions
+│   │   │   └── AppRoutes.jsx    # Route definitions
+│   │   ├── hooks/
+│   │   │   └── useBackNavigation.js
+│   │   ├── constants/
+│   │   │   ├── index.js
+│   │   │   └── universities.js
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── landing.css         # Landing page animations
 │   ├── index.html
 │   ├── package.json
 │   ├── vite.config.js
-│   └── tailwind.config.js
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   └── .env.example
 │
+├── start.bat                # Complete system launcher with health checks
+├── start-backend.bat        # Backend-only launcher
+├── start-frontend.bat       # Frontend-only launcher
+├── start-simple.bat         # Simplified launcher
+├── run_commands.txt         # Command reference guide
 ├── .gitignore
 └── README.md
 ```
@@ -253,17 +334,20 @@ DATABASE_URL=postgresql://username:password@localhost:5432/unimart
 REDIS_URL=redis://localhost:6379
 
 # JWT (student tokens)
-JWT_SECRET_KEY=your_super_secret_key_here
+JWT_SECRET_KEY=your_super_secret_key_here_minimum_64_characters_recommended
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# Refresh token
-REFRESH_TOKEN_SECRET=your_refresh_secret_here
+# Refresh token (7-day expiry)
+REFRESH_TOKEN_SECRET=your_refresh_secret_here_different_from_jwt_secret
+REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # Admin JWT (separate from student JWT)
-ADMIN_JWT_SECRET=your_admin_secret_here
+ADMIN_JWT_SECRET=your_admin_secret_here_different_from_student_secret
+
+# Admin credentials (hashed on startup)
 ADMIN_USERNAME=superadmin
-ADMIN_PASSWORD=your_strong_admin_password
+ADMIN_PASSWORD=your_strong_admin_password_change_in_production
 
 # SMTP Email
 SMTP_HOST=smtp.gmail.com
@@ -271,6 +355,14 @@ SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_gmail_app_password
 SMTP_FROM=noreply@unimart.edu
+
+# Cloudinary (image hosting)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# CORS (comma-separated allowed origins)
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
 ### Frontend `.env.local`
@@ -292,12 +384,13 @@ The full interactive API documentation is available at:
 
 | Group | Base Path | Description |
 |---|---|---|
-| Auth | `/auth` | Register, login, refresh token |
-| OTP | `/otp` | Send and verify OTPs |
-| Products | `/products` | CRUD, search, categorize |
+| Auth | `/auth` | Register, login, refresh token, OTP verification |
+| OTP | `/otp` | Send and verify delivery OTPs |
+| Products | `/products` | CRUD, search, filter, categorize |
 | Orders | `/orders` | Create, confirm, deliver, complete |
 | Chat | `/chat` | Order-scoped messaging |
-| Admin | `/admin` | Full admin management suite |
+| Upload | `/upload` | Cloudinary image upload with validation |
+| Admin | `/admin` | Full admin management suite (20+ endpoints) |
 
 ---
 
@@ -305,26 +398,38 @@ The full interactive API documentation is available at:
 
 ### Student Authentication
 - **JWT Bearer tokens** — stateless, 30-minute expiry
-- **Refresh tokens** — 7-day expiry, separate secret
-- **bcrypt** password hashing (cost factor 12)
+- **Refresh tokens** — 7-day expiry with separate secret
+- **bcrypt** password hashing (cost factor: default bcrypt strength)
 - **Register number binding** — every JWT is tied to a register number
+- **Token validation** — FastAPI dependencies with OAuth2 password flow
 
 ### Admin Authentication
 - **Completely separate JWT** with `token_type: "admin"` claim
 - Admin tokens use a **different secret** than student tokens
 - Student tokens cannot access admin endpoints (token type guard)
-- Every admin action is recorded in `admin_audit_logs`
+- Every admin action is recorded in `admin_audit_logs` with IP tracking
+- Default admin account seeded on first startup (credentials from .env)
 
 ### OTP Security
 - Generated using `secrets.randbelow` (cryptographically secure)
-- **Never stored in PostgreSQL** — Redis only with 600-second TTL
+- **Never stored in PostgreSQL** — Redis only with 600-second TTL (10 minutes)
 - **Brute-force protection** — invalidated after 5 failed attempts
 - Delivered to **official university email only** (not personal email)
+- Separate OTPs for registration and delivery verification
 
 ### Rate Limiting
-- Auth endpoints: 10 requests / 60 seconds
-- Admin login: 5 requests / 300 seconds
-- Standard endpoints: 60 requests / 60 seconds
+- **Redis-based sliding window** with IP tracking
+- Auth endpoints: 10 requests / 60 seconds (STRICT)
+- Admin endpoints: 10 requests / 60 seconds (STRICT)
+- Standard endpoints: 60 requests / 60 seconds (NORMAL)
+- Upload endpoints: 200 requests / 60 seconds (RELAXED)
+- **Fails open** if Redis unavailable (availability > strict security)
+
+### Database Security
+- **Connection pooling** — pool_size=10, max_overflow=20, pre-ping health checks
+- **Soft deletes** — Users and products marked deleted, not removed (FK integrity)
+- **Cascade rules** — ProductImage and ChatMessage cascade delete with parent
+- **Registry validation** — Foreign key constraint on official_records prevents unauthorized signups
 
 ---
 
@@ -346,7 +451,109 @@ with bcrypt — **never stored as plaintext**.
 
 ---
 
+## Database Schema
+
+### Core Tables
+
+**official_records** (Master Registry - Read-Only)
+- `register_number` (PK) — Student registration number
+- `full_name` — Student's full name
+- `university` — University name
+- `college` — College within university
+- `department` — Academic department
+- `official_email` — University-issued email
+- Seeded from `official_data.csv`
+
+**user_profiles** (Student Accounts)
+- `register_number` (PK, FK to official_records) — Links to registry
+- `username` (unique) — Display name
+- `hashed_password` — bcrypt hashed
+- `profile_picture_url` — Optional profile image
+- `personal_mail_id` — Personal email
+- `phone_number` — Contact number
+- `is_suspended`, `is_deleted` — Soft delete flags
+- `deleted_at`, `deletion_note` — Audit trail
+
+**products**
+- `id` (PK) — Auto-increment
+- `seller_register_number` (FK to user_profiles)
+- `title`, `description` — Product details
+- `price` — Decimal(10, 2)
+- `category` — Product category
+- `image_urls` — JSON array (deprecated, use product_images)
+- `product_status` — Enum: AVAILABLE, RESERVED, SOLD_OUT, DELETED
+- `is_flagged` — Admin moderation flag
+- `created_at`, `updated_at`
+
+**product_images** (Multi-Image Support)
+- `id` (PK)
+- `product_id` (FK to products, CASCADE delete)
+- `url` — Cloudinary URL
+- `position` — Display order (integer)
+- `created_at`
+
+**orders**
+- `id` (PK)
+- `product_id` (FK to products)
+- `buyer_register_number` (FK to user_profiles)
+- `seller_register_number` (FK to user_profiles)
+- `order_status` — Enum: PENDING, CONFIRMED, COMPLETED, CANCELLED
+- `otp_code` — Delivery verification OTP (optional)
+- `created_at`, `completed_at`
+
+**chat_messages**
+- `id` (PK)
+- `order_id` (FK to orders, CASCADE delete)
+- `sender_register_number` (FK to user_profiles)
+- `message` — Text (max 2000 chars)
+- `sent_at`
+
+**admin_accounts**
+- `id` (PK)
+- `username` (unique)
+- `hashed_password` — bcrypt hashed
+- `display_name` — Full name
+- `role` — Enum: super_admin
+- `is_active` — Account status
+- `created_at`, `last_login`
+
+**admin_audit_logs**
+- `id` (PK)
+- `admin_id` (FK to admin_accounts)
+- `admin_username` — Denormalized for performance
+- `action` — Action type (e.g., "UPDATE_USER", "DELETE_PRODUCT")
+- `target_type` — Target entity type
+- `target_id` — Target entity ID
+- `details` — JSON with action details
+- `ip_address` — Request IP
+- `created_at`
+
+---
+
 ## Deployment
+
+### Quick Start (Windows)
+The project includes automated launcher scripts:
+
+```bash
+# Complete system launcher (checks PostgreSQL, Redis, starts both services)
+./start.bat
+
+# Backend only
+./start-backend.bat
+
+# Frontend only
+./start-frontend.bat
+
+# Simplified launcher (minimal checks)
+./start-simple.bat
+```
+
+These scripts automatically:
+- Check for running PostgreSQL and Redis
+- Activate virtual environments
+- Start uvicorn and vite dev servers
+- Display health check URLs
 
 ### Frontend (Vercel)
 ```bash
