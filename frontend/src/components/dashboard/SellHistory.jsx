@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, KeyRound } from 'lucide-react';
+import { MessageCircle, KeyRound, Send } from 'lucide-react';
 import OrderStatusBadge from '../order/OrderStatusBadge';
 import Button from '../common/Button';
 import { formatPrice, formatDate } from '../../utils/helpers';
 
-export default function SellHistory({ orders, onVerifyOTP }) {
+export default function SellHistory({ orders, onInitiateDelivery, onVerifyOTP }) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12">
@@ -60,16 +60,21 @@ export default function SellHistory({ orders, onVerifyOTP }) {
                 <OrderStatusBadge status={order.order_status} />
               </div>
               <p className="text-lg font-bold gradient-text mt-1">{formatPrice(order.product_price)}</p>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap">
                 {order.order_status !== 'CANCELLED' && order.order_status !== 'COMPLETED' && (
                   <Link to={`/chat/${order.id}`}>
                     <Button variant="secondary" size="sm" icon={MessageCircle}>Chat</Button>
                   </Link>
                 )}
                 {order.order_status === 'CONFIRMED' && (
-                  <Button variant="primary" size="sm" icon={KeyRound} onClick={() => onVerifyOTP(order)}>
-                    Enter OTP
-                  </Button>
+                  <>
+                    <Button variant="primary" size="sm" icon={Send} onClick={() => onInitiateDelivery(order)}>
+                      Initiate Delivery
+                    </Button>
+                    <Button variant="secondary" size="sm" icon={KeyRound} onClick={() => onVerifyOTP(order)}>
+                      Enter OTP
+                    </Button>
+                  </>
                 )}
                 {order.order_status === 'COMPLETED' && (
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">

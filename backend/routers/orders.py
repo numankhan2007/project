@@ -134,7 +134,7 @@ def get_order(
         "completed_at": str(order.completed_at) if order.completed_at else None,
         "product_title": product.title if product else None,
         "product_price": product.price if product else None,
-        "product_image": product.image_url if product else None,
+        "product_image": product.image_urls if product else None,
         "buyer_username": buyer.username if buyer else None,
         "seller_username": seller.username if seller else None,
     }
