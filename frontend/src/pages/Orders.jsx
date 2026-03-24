@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, MessageCircle, KeyRound, Send, Loader2 } from 'lucide-react';
+import { Package, MessageCircle, KeyRound, Send, Loader2, XCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import OrderStatusBadge from '../components/order/OrderStatusBadge';
 import OTPModal from '../components/order/OTPModal';
+import CancelOrderModal from '../components/order/CancelOrderModal';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { formatPrice, formatDate } from '../utils/helpers';
@@ -30,6 +31,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [otpModal, setOtpModal] = useState({ open: false, order: null, mode: 'generate' });
+  const [cancelModal, setCancelModal] = useState({ open: false, order: null });
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -64,6 +66,15 @@ export default function Orders() {
   const handleOtpModalClose = () => {
     setOtpModal({ open: false, order: null, mode: 'generate' });
     // Refresh orders to reflect any status changes
+    fetchOrders();
+  };
+
+  const handleCancelModalClose = () => {
+    setCancelModal({ open: false, order: null });
+  };
+
+  const handleOrderCancelled = () => {
+    // Refresh orders after successful cancellation
     fetchOrders();
   };
 
@@ -179,6 +190,18 @@ export default function Orders() {
                             </Link>
                           )}
 
+                        {/* Buyer/Seller: Cancel Order — available for PENDING and CONFIRMED orders */}
+                        {(order.order_status === ORDER_STATUS.PENDING || order.order_status === ORDER_STATUS.CONFIRMED) && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={XCircle}
+                            onClick={() => setCancelModal({ open: true, order })}
+                          >
+                            Cancel Order
+                          </Button>
+                        )}
+
                         {/* Seller: Initiate Delivery — generates OTP & emails buyer */}
                         {!isBuyer && order.order_status === ORDER_STATUS.CONFIRMED && (
                           <Button
@@ -231,6 +254,13 @@ export default function Orders() {
         onClose={handleOtpModalClose}
         order={otpModal.order}
         mode={otpModal.mode}
+      />
+
+      <CancelOrderModal
+        isOpen={cancelModal.open}
+        onClose={handleCancelModalClose}
+        order={cancelModal.order}
+        onCancelled={handleOrderCancelled}
       />
     </div>
   );

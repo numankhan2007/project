@@ -1,12 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import func
+from pydantic import BaseModel
+from typing import Optional
 from database import get_db
-from models import Order, Product, UserProfile, OrderStatus, ProductStatus
-from schemas import OrderCreate, OrderStatusUpdate
+from models import Order, Product, UserProfile, OrderStatus, ProductStatus, NotificationType
+from schemas import OrderCreate
 from dependencies import get_current_user
+from routers.notifications import create_notification
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
+
+
+# ============================================================
+# Schemas
+# ============================================================
+
+class OrderStatusUpdate(BaseModel):
+    status: str
+    reason: Optional[str] = None  # Cancellation reason
+
+
+class OrderCancelRequest(BaseModel):
+    reason: str
 
 
 # ============================================================
@@ -55,6 +71,16 @@ def create_order(
 
     db.commit()
     db.refresh(new_order)
+
+    # Send notification to seller
+    create_notification(
+        db=db,
+        user_register_number=product.seller_register_number,
+        notification_type=NotificationType.ORDER_PLACED,
+        title="New Order Received! 🛒",
+        message=f"{current_user.username} wants to buy your '{product.title}' for ₹{product.price}",
+        order_id=new_order.id
+    )
 
     return {
         "id": new_order.id,
@@ -132,6 +158,9 @@ def get_order(
         "order_status": order.order_status,
         "created_at": str(order.created_at) if order.created_at else None,
         "completed_at": str(order.completed_at) if order.completed_at else None,
+        "cancelled_at": str(order.cancelled_at) if order.cancelled_at else None,
+        "cancelled_by": order.cancelled_by,
+        "cancellation_reason": order.cancellation_reason,
         "product_title": product.title if product else None,
         "product_price": product.price if product else None,
         "product_image": product.image_urls if product else None,
@@ -163,16 +192,49 @@ def update_order_status(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     new_status = data.status.upper()
+    product = db.query(Product).filter(Product.id == order.product_id).first()
+    buyer = db.query(UserProfile).filter(UserProfile.register_number == order.buyer_register_number).first()
+    seller = db.query(UserProfile).filter(UserProfile.register_number == order.seller_register_number).first()
 
     # Validate status transition
-    if new_status == OrderStatus.CONFIRMED and order.seller_register_number != current_user.register_number:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the seller can confirm an order")
+    if new_status == OrderStatus.CONFIRMED:
+        if order.seller_register_number != current_user.register_number:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the seller can confirm an order")
+
+        # Notify buyer that order is confirmed
+        create_notification(
+            db=db,
+            user_register_number=order.buyer_register_number,
+            notification_type=NotificationType.ORDER_CONFIRMED,
+            title="Order Confirmed! ✅",
+            message=f"{seller.username if seller else 'Seller'} confirmed your order for '{product.title if product else 'item'}'. You can now chat to arrange delivery!",
+            order_id=order.id
+        )
 
     if new_status == OrderStatus.CANCELLED:
         # Release the product back to available
-        product = db.query(Product).filter(Product.id == order.product_id).first()
-        if product and product.product_status == ProductStatus.RESERVED:
+        if product and product.product_status in [ProductStatus.RESERVED, ProductStatus.SOLD_OUT]:
             product.product_status = ProductStatus.AVAILABLE
+
+        # Determine who cancelled
+        is_buyer = order.buyer_register_number == current_user.register_number
+        order.cancelled_by = "buyer" if is_buyer else "seller"
+        order.cancelled_at = func.now()
+        order.cancellation_reason = data.reason
+
+        # Notify the other party
+        other_party = order.seller_register_number if is_buyer else order.buyer_register_number
+        canceller_name = buyer.username if is_buyer else seller.username
+        reason_text = f" Reason: {data.reason}" if data.reason else ""
+
+        create_notification(
+            db=db,
+            user_register_number=other_party,
+            notification_type=NotificationType.ORDER_CANCELLED,
+            title="Order Cancelled ❌",
+            message=f"{canceller_name} cancelled the order for '{product.title if product else 'item'}'.{reason_text}",
+            order_id=order.id
+        )
 
     order.order_status = new_status
 
@@ -183,6 +245,74 @@ def update_order_status(
     db.refresh(order)
 
     return {"id": order.id, "status": order.order_status}
+
+
+# ============================================================
+# POST /orders/{id}/cancel — Cancel order with reason (buyer/seller)
+# ============================================================
+
+@router.post("/{order_id}/cancel")
+def cancel_order_with_reason(
+    order_id: int,
+    data: OrderCancelRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cancel an order with a reason. Either buyer or seller can cancel."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    # Only involved parties can cancel
+    if (order.buyer_register_number != current_user.register_number and
+            order.seller_register_number != current_user.register_number):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Can only cancel PENDING or CONFIRMED orders
+    if order.order_status not in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot cancel order with status '{order.order_status}'"
+        )
+
+    product = db.query(Product).filter(Product.id == order.product_id).first()
+    buyer = db.query(UserProfile).filter(UserProfile.register_number == order.buyer_register_number).first()
+    seller = db.query(UserProfile).filter(UserProfile.register_number == order.seller_register_number).first()
+
+    # Release the product back to available
+    if product and product.product_status in [ProductStatus.RESERVED, ProductStatus.SOLD_OUT]:
+        product.product_status = ProductStatus.AVAILABLE
+
+    # Determine who cancelled
+    is_buyer = order.buyer_register_number == current_user.register_number
+    order.cancelled_by = "buyer" if is_buyer else "seller"
+    order.cancelled_at = func.now()
+    order.cancellation_reason = data.reason
+    order.order_status = OrderStatus.CANCELLED
+
+    # Notify the other party
+    other_party = order.seller_register_number if is_buyer else order.buyer_register_number
+    canceller_name = buyer.username if is_buyer else seller.username
+
+    create_notification(
+        db=db,
+        user_register_number=other_party,
+        notification_type=NotificationType.ORDER_CANCELLED,
+        title="Order Cancelled ❌",
+        message=f"{canceller_name} cancelled the order for '{product.title if product else 'item'}'. Reason: {data.reason}",
+        order_id=order.id
+    )
+
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "id": order.id,
+        "status": order.order_status,
+        "cancelled_by": order.cancelled_by,
+        "cancellation_reason": order.cancellation_reason
+    }
 
 
 # ============================================================
@@ -204,6 +334,9 @@ def _format_orders(orders, db):
             "order_status": o.order_status,
             "created_at": str(o.created_at) if o.created_at else None,
             "completed_at": str(o.completed_at) if o.completed_at else None,
+            "cancelled_at": str(o.cancelled_at) if hasattr(o, 'cancelled_at') and o.cancelled_at else None,
+            "cancelled_by": o.cancelled_by if hasattr(o, 'cancelled_by') else None,
+            "cancellation_reason": o.cancellation_reason if hasattr(o, 'cancellation_reason') else None,
             "product_title": product.title if product else None,
             "product_price": product.price if product else None,
             "product_image": product.image_urls if product else None,

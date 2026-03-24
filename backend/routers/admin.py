@@ -307,6 +307,7 @@ def _product_view(p: Product, db: Session) -> dict:
         "category": p.category,
         "product_status": p.product_status,
         "is_flagged": p.is_flagged,
+        "image_urls": p.image_urls if p.image_urls else [],
         "seller_register_number": p.seller_register_number,
         "seller_username": seller.username if seller else None,
         "created_at": p.created_at,
@@ -399,10 +400,21 @@ def delete_product(
     product = db.query(Product).filter_by(id=product_id).first()
     if not product:
         raise HTTPException(404, "Product not found")
+
+    # First delete all orders and chat messages associated with this product (to avoid FK constraint)
+    from models import ChatMessage
+    orders = db.query(Order).filter_by(product_id=product_id).all()
+    orders_deleted = len(orders)
+    for order in orders:
+        # Delete chat messages for this order first
+        db.query(ChatMessage).filter_by(order_id=order.id).delete()
+        db.delete(order)
+
     db.delete(product)
     db.commit()
-    _log(db, admin, "PRODUCT_DELETE", "product", str(product_id), request=request)
-    return {"deleted": True, "product_id": product_id}
+    _log(db, admin, "PRODUCT_DELETE", "product", str(product_id),
+         {"orders_deleted": orders_deleted}, request=request)
+    return {"deleted": True, "product_id": product_id, "orders_deleted": orders_deleted}
 
 
 # ─────────────────────────────────────────────────────────────

@@ -129,15 +129,6 @@ export default function Products() {
                 <button onClick={() => setDetailProduct(null)} style={{ background: "none", border: "none", color: tokens.textMuted, fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>×</button>
               </div>
 
-              {/* Product image */}
-              {detailProduct.image_urls?.[0] && (
-                <img
-                  src={detailProduct.image_urls[0]}
-                  alt={detailProduct.title}
-                  style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: tokens.radius.lg, marginBottom: 20 }}
-                />
-              )}
-
               {/* Details grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, fontSize: 13 }}>
                 {[

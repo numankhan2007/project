@@ -108,6 +108,9 @@ class Order(Base):
     otp_code = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_by = Column(String, nullable=True)  # 'buyer' or 'seller'
+    cancellation_reason = Column(Text, nullable=True)
 
     # Relationships
     product = relationship("Product", back_populates="orders")
@@ -161,4 +164,33 @@ class UserActivityLog(Base):
     details         = Column(Text, nullable=True)
     ip_address      = Column(String(45), nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# Notification (in-app notifications for users)
+# ============================================================
+
+class NotificationType(str, enum.Enum):
+    ORDER_PLACED = "ORDER_PLACED"           # Seller receives when buyer places order
+    ORDER_CONFIRMED = "ORDER_CONFIRMED"     # Buyer receives when seller confirms
+    ORDER_CANCELLED = "ORDER_CANCELLED"     # Both receive on cancellation
+    OTP_SENT = "OTP_SENT"                   # Buyer receives when seller sends OTP
+    ORDER_COMPLETED = "ORDER_COMPLETED"     # Both receive on completion
+    SYSTEM = "SYSTEM"                       # System notifications
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_register_number = Column(String, ForeignKey("user_profiles.register_number"), nullable=False, index=True)
+    type = Column(String(50), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("UserProfile", backref="notifications")
 

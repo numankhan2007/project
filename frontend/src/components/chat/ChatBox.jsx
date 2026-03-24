@@ -1,11 +1,13 @@
 import { useRef, useEffect } from 'react';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import ChatHeader from './ChatHeader';
+import DeliveryOTPPanel from './DeliveryOTPPanel';
 
-export default function ChatBox({ messages, order, currentUser, otherUser, onSend, readOnly = false, loading = false }) {
+export default function ChatBox({ messages, order, currentUser, otherUser, onSend, readOnly = false, loading = false, onOrderComplete }) {
   const scrollRef = useRef(null);
+  const isSeller = order?.seller_register_number === currentUser || order?.seller?.register_number === currentUser;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -17,6 +19,9 @@ export default function ChatBox({ messages, order, currentUser, otherUser, onSen
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl">
       {/* Header */}
       <ChatHeader order={order} otherUser={otherUser} />
+
+      {/* OTP Panel for Seller (only shows when order is CONFIRMED) */}
+      <DeliveryOTPPanel order={order} isSeller={isSeller} onOrderComplete={onOrderComplete} />
 
       {/* Messages */}
       <div

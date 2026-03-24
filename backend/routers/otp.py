@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from database import get_db
-from models import Order, Product, UserProfile, OrderStatus, ProductStatus
+from models import Order, Product, UserProfile, OrderStatus, ProductStatus, NotificationType
 from schemas import OTPGenerate, OTPVerify, OTPSendEmail
 from dependencies import get_current_user
 from services.email_service import send_otp_email, send_transaction_complete_email
 from redis_client import redis_client
+from routers.notifications import create_notification
 
 router = APIRouter(prefix="/otp", tags=["OTP Handshake"])
 
@@ -140,6 +141,9 @@ async def verify_otp(
     seller = db.query(UserProfile).filter(
         UserProfile.register_number == order.seller_register_number
     ).first()
+    buyer = db.query(UserProfile).filter(
+        UserProfile.register_number == order.buyer_register_number
+    ).first()
 
     if seller and product:
         try:
@@ -152,6 +156,29 @@ async def verify_otp(
             )
         except Exception:
             pass  # Don't fail the transaction if email fails
+
+    # Send notifications to both parties
+    product_title = product.title if product else "item"
+
+    # Notify seller
+    create_notification(
+        db=db,
+        user_register_number=order.seller_register_number,
+        notification_type=NotificationType.ORDER_COMPLETED,
+        title="Transaction Complete! 🎉",
+        message=f"You've successfully sold '{product_title}' to {buyer.username if buyer else 'buyer'}. The transaction is now complete!",
+        order_id=order.id
+    )
+
+    # Notify buyer
+    create_notification(
+        db=db,
+        user_register_number=order.buyer_register_number,
+        notification_type=NotificationType.ORDER_COMPLETED,
+        title="Purchase Complete! 🎉",
+        message=f"You've successfully purchased '{product_title}' from {seller.username if seller else 'seller'}. Enjoy your item!",
+        order_id=order.id
+    )
 
     return {"verified": True, "message": "Transaction completed successfully!"}
 
@@ -219,5 +246,18 @@ async def send_otp_via_email(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send email: {str(e)}"
         )
+
+    # Get product info for notification
+    product = db.query(Product).filter(Product.id == order.product_id).first()
+
+    # Send notification to buyer
+    create_notification(
+        db=db,
+        user_register_number=order.buyer_register_number,
+        notification_type=NotificationType.OTP_SENT,
+        title="Delivery OTP Sent! 🔑",
+        message=f"Check your email for the OTP code. Share it with the seller ({current_user.username}) to complete the delivery for '{product.title if product else 'item'}'.",
+        order_id=order.id
+    )
 
     return {"sent": True, "message": f"OTP sent to {email_to_send}"}

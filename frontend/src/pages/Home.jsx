@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, TrendingUp, Zap, BadgeCheck, Users, Loader2, RefreshCw } from 'lucide-react';
@@ -15,6 +15,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // FIXED: Declare filters state BEFORE using it in useEffect
+  const [filters, setFilters] = useState({
+    category: searchParams.get('category') || '',
+    condition: '',
+    sort: 'newest',
+    priceMin: '',
+    priceMax: '',
+    campus: '',
+    freeOnly: false,
+  });
+
   // Fetch stats
   useEffect(() => {
     const fetchStats = async () => {
@@ -30,7 +41,7 @@ export default function Home() {
   }, []);
 
   // Fetch products with filters from API
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -48,21 +59,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, filters.category, filters.priceMin, filters.priceMax]);
 
   useEffect(() => {
     fetchProducts();
-  }, [searchQuery, filters.category, filters.priceMin, filters.priceMax]);
-
-  const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
-    condition: '',
-    sort: 'newest',
-    priceMin: '',
-    priceMax: '',
-    campus: '',
-    freeOnly: false,
-  });
+  }, [fetchProducts]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];

@@ -7,7 +7,6 @@ import {
   X,
   ShoppingBag,
   Plus,
-  Bell,
   Home,
   User,
   Package,
@@ -24,6 +23,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { getInitials } from "../../utils/helpers";
+import NotificationBell from "../common/NotificationBell";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -31,20 +31,15 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef(null);
-  const notificationsRef = useRef(null);
   const searchInputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
-        setShowNotifications(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -54,7 +49,6 @@ export default function Navbar() {
   useEffect(() => {
     setShowMobileMenu(false);
     setShowDropdown(false);
-    setShowNotifications(false);
   }, [location.pathname]);
 
   // Auto-open mobile search if search param is present
@@ -174,41 +168,8 @@ export default function Navbar() {
                   ))}
                 </div>
 
-                {/* Notification Dropdown */}
-                <div className="relative" ref={notificationsRef}>
-                  <button
-                    onClick={() => {
-                      setShowNotifications(!showNotifications);
-                      setShowDropdown(false);
-                    }}
-                    className="relative p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                  >
-                    <Bell size={20} />
-                  </button>
-
-                  <AnimatePresence>
-                    {showNotifications && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-[-60px] sm:right-0 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
-                      >
-                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                          <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
-                        </div>
-                        <div className="p-8 text-center">
-                          <div className="w-16 h-16 mx-auto bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                            <Bell className="text-gray-300 dark:text-gray-500" size={24} />
-                          </div>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No new notifications</p>
-                          <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">We'll let you know when something arrives</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                {/* Notification Bell */}
+                <NotificationBell />
 
                 {/* Mobile Search Toggle */}
                 <button

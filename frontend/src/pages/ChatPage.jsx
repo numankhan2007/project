@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Loader2 } from 'lucide-react';
 import ChatBox from '../components/chat/ChatBox';
@@ -10,6 +10,7 @@ import { ORDER_STATUS } from '../constants';
 
 export default function ChatPage() {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { getOrderById } = useOrders();
   const { messages, loadMessages, sendMessage, loading: chatLoading } = useChat();
@@ -18,24 +19,35 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch order and messages when page loads
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const orderData = await getOrderById(orderId);
-        setOrder(orderData);
-        await loadMessages(orderId);
-      } catch (err) {
-        console.error('Failed to load chat:', err);
-        setError(err?.response?.data?.detail || 'Failed to load chat');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  // Fetch order and messages
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const orderData = await getOrderById(orderId);
+      setOrder(orderData);
+      await loadMessages(orderId);
+    } catch (err) {
+      console.error('Failed to load chat:', err);
+      setError(err?.response?.data?.detail || 'Failed to load chat');
+    } finally {
+      setLoading(false);
+    }
   }, [orderId, getOrderById, loadMessages]);
+
+  // Fetch data when page loads
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Handle order completion (refresh order data and redirect)
+  const handleOrderComplete = useCallback(async () => {
+    await fetchData();
+    // Navigate to orders page after completion
+    setTimeout(() => {
+      navigate('/orders');
+    }, 2000);
+  }, [fetchData, navigate]);
 
   if (loading) {
     return (
@@ -104,6 +116,7 @@ export default function ChatPage() {
           onSend={handleSend}
           readOnly={isReadOnly}
           loading={chatLoading}
+          onOrderComplete={handleOrderComplete}
         />
       </motion.div>
     </div>

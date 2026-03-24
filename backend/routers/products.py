@@ -239,6 +239,19 @@ def delete_product(
     if product.seller_register_number != current_user.register_number:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own products")
 
+    # Safety check: prevent deletion if product has active orders
+    from models import Order, OrderStatus
+    active_orders = db.query(Order).filter(
+        Order.product_id == product_id,
+        Order.order_status.in_([OrderStatus.PENDING, OrderStatus.CONFIRMED])
+    ).first()
+
+    if active_orders:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete product with active orders. Please complete or cancel existing orders first."
+        )
+
     db.delete(product)
     db.commit()
 

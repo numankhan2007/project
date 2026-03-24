@@ -20,6 +20,10 @@ const orderService = {
   getById: async (id) => {
     return api.get(`/orders/${id}`);
   },
+
+  cancel: async (id, reason) => {
+    return api.post(`/orders/${id}/cancel`, { reason });
+  },
 };
 
 export default orderService;
