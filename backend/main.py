@@ -67,7 +67,6 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",                    # Local Vite dev server (IP)
     "http://localhost:3000",                    # Alternative local dev
     "http://127.0.0.1:3000",                    # Alternative local dev (IP)
-    "https://project-pi-swart.vercel.app",     # Vercel production frontend
 ]
 
 app.add_middleware(
