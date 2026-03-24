@@ -2,14 +2,14 @@
    UNIMART LANDING v6 — landing.css
    ════════════════════════════════════════════ */
 
-.lnd *, .lnd *::before, .lnd *::after {
-  box-sizing: border-box; margin: 0; padding: 0;
-}
-
-/* Hide cursor only on the landing page wrapper */
+/* Hide default cursor only on landing page */
 .lnd-cursor-hidden,
 .lnd-cursor-hidden * {
   cursor: none !important;
+}
+
+.lnd *, .lnd *::before, .lnd *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
 }
 
 /* ─── MAIN CONTENT KEYFRAMES ──────────────────────────── */
@@ -61,7 +61,6 @@
 
 /* ─── INTERACTIVE ───────────────────────────── */
 .lnd-portal-btn {
-  cursor: none !important;
   transition: transform 0.2s cubic-bezier(0.34,1.5,0.64,1), box-shadow 0.22s ease, border-color 0.18s ease;
 }
 .lnd-portal-btn:hover  { transform: scale(1.09) translateY(-7px) !important; }
@@ -72,7 +71,6 @@
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.22) !important;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.18s ease;
-  cursor: none !important;
 }
 .lnd-card:hover {
   transform: translateY(-5px) scale(1.02);
@@ -82,7 +80,6 @@
 
 /* Social icon buttons */
 .lnd-social-btn {
-  cursor: none !important;
   transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 .lnd-social-btn:hover {

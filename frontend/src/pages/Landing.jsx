@@ -1,17 +1,17 @@
 /**
  * UNIMART Landing.jsx v6.0
  * - Pitch black background
- * - Rainbow tube cursor (landing page only)
  * - No Marvel intro — loads directly to main content
  * - RGB glow cycling animation on title (rainbow spectrum)
  * - Social icon footer (Telegram, Mail, YouTube, Facebook, Twitter, GitLab)
  * - All cards & buttons: fully transparent, outline only
+ * - Tube cursor follows mouse (click to randomize colors)
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { initTubesCursor, destroyTubesCursor } from "../components/TubesCursor.js";
 import "./landing.css";
+import { initTubesCursor, destroyTubesCursor } from "../components/TubesCursor";
 
 // -- UPDATE THESE HREFS WITH YOUR ACTUAL LINKS --
 const SOCIAL_LINKS = [
@@ -53,22 +53,6 @@ const FEATURE_CARDS = [
   { icon: "🏪", title: "Campus Marketplace",       desc: "Textbooks, electronics, lab equipment, and notes — everything you need for university life, traded on campus." },
   { icon: "🔒", title: "Trust-First Ecosystem",    desc: "A closed, invite-only marketplace. No anonymous sellers. No unverified buyers. Safety by design." },
 ];
-
-// -- TUBE CURSOR CANVAS --
-function TubeCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    initTubesCursor(ref.current);
-    return () => destroyTubesCursor();
-  }, []);
-  return (
-    <canvas ref={ref} style={{
-      position: "fixed", inset: 0,
-      width: "100%", height: "100%",
-      zIndex: 0, pointerEvents: "none", display: "block",
-    }} />
-  );
-}
 
 // -- PORTAL BUTTON — transparent, outline + glow only --
 function PortalButton({ label, icon, sublabel, color, onClick, animDelay="0s" }) {
@@ -131,6 +115,45 @@ function SocialFooter() {
         © 2026 UNIMART. ALL RIGHTS RESERVED.
       </div>
     </div>
+  );
+}
+
+// -- TUBE CANVAS -- cursor effect
+function TubeCanvas() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    // Set touch-action: none on body — matches original style.css
+    const prev = document.body.style.touchAction;
+    document.body.style.touchAction = "none";
+
+    initTubesCursor(ref.current);
+
+    return () => {
+      document.body.style.touchAction = prev;
+      destroyTubesCursor();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={ref}
+      style={{
+        position:      "fixed",
+        top:           0,
+        right:         0,
+        bottom:        0,
+        left:          0,
+        width:         "100%",
+        height:        "100%",
+        overflow:      "hidden",
+        zIndex:        0,
+        pointerEvents: "none",
+        display:       "block",
+        willChange:    "transform",      // GPU compositing layer
+        transform:     "translateZ(0)",  // force hardware acceleration
+      }}
+    />
   );
 }
 
@@ -209,7 +232,7 @@ export default function Landing() {
     <div className="lnd-cursor-hidden" style={{ minHeight: "100vh" }}>
       {/* Pitch black background */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, background: "#000000" }} />
-      {/* Tube cursor canvas — landing page only */}
+      {/* Tube cursor canvas */}
       <TubeCanvas />
       {/* Main landing — no intro, loads directly */}
       <MainLanding />

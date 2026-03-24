@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from models import UserProfile
-from routers import auth, products, orders, chat, otp, admin, upload
+from routers import auth, products, orders, chat, otp, admin, upload, notifications
 from scheduler import start_scheduler, stop_scheduler
 from seed_data import seed_official_records
 from admin_auth import seed_super_admin
@@ -67,6 +67,7 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",                    # Local Vite dev server (IP)
     "http://localhost:3000",                    # Alternative local dev
     "http://127.0.0.1:3000",                    # Alternative local dev (IP)
+    "https://project-pi-swart.vercel.app",     # Vercel production frontend
 ]
 
 app.add_middleware(
@@ -108,6 +109,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(otp.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
 
 
 # ============================================================
