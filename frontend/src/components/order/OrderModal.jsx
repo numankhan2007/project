@@ -10,7 +10,7 @@ import { useNotifications } from '../../context/NotificationContext';
 
 export default function OrderModal({ isOpen, onClose, product }) {
   const { createOrder } = useOrders();
-  const { success } = useNotifications();
+  const { success, error } = useNotifications();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -26,10 +26,8 @@ export default function OrderModal({ isOpen, onClose, product }) {
       setOrderPlaced(true);
       success(`Order placed for "${product.title}"!`);
     } catch (err) {
-      console.error(err);
-      // Show error message to user
       const errorMessage = err.response?.data?.detail || 'Failed to place order. Please try again.';
-      alert(errorMessage);
+      error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -62,7 +60,7 @@ export default function OrderModal({ isOpen, onClose, product }) {
             {/* Product Summary */}
             <div className="flex gap-4">
               <img
-                src={product.image_urls?.[0] || product.image_url || '/placeholder.png'}
+                src={product.image_urls?.[0] || product.image_url || '/placeholder.svg'}
                 alt={product.title}
                 className="w-24 h-24 rounded-xl object-contain flex-shrink-0 bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700"
               />

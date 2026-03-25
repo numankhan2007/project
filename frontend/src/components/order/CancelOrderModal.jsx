@@ -59,20 +59,15 @@ export default function CancelOrderModal({ isOpen, onClose, order, onCancelled }
     setError(null);
 
     try {
-      const response = await orderService.cancel(order.id, reason);
-      console.log('Cancel order success:', response.data);
+      await orderService.cancel(order.id, reason);
       onCancelled?.();
       onClose();
     } catch (err) {
-      console.error('Cancel order error:', err);
-
       let errorMessage = 'Failed to cancel order';
 
       if (err.response) {
         const status = err.response.status;
         const detail = err.response.data?.detail;
-        console.error('Error status:', status);
-        console.error('Error data:', err.response.data);
 
         switch (status) {
           case 401:

@@ -106,7 +106,7 @@ export default function MyProducts({ onProductDeleted }) {
           const category = CATEGORIES.find((c) => c.id === product.category);
           const isSold = product.product_status === 'SOLD_OUT' || product.product_status === 'sold';
           const isReserved = product.product_status === 'RESERVED';
-          const imageUrl = product.image_urls?.[0] || product.image_url || '/placeholder.png';
+          const imageUrl = product.image_urls?.[0] || product.image_url || '/placeholder.svg';
 
           return (
             <motion.div
@@ -213,7 +213,7 @@ export default function MyProducts({ onProductDeleted }) {
               <div className="p-5">
                 <div className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                   <img
-                    src={deleteModal.product?.image_urls?.[0] || deleteModal.product?.image_url || '/placeholder.png'}
+                    src={deleteModal.product?.image_urls?.[0] || deleteModal.product?.image_url || '/placeholder.svg'}
                     alt={deleteModal.product?.title}
                     className="w-16 h-16 rounded-lg object-contain bg-white p-2 border border-gray-100 shadow-sm"
                   />

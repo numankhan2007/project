@@ -267,12 +267,6 @@ export default function Register() {
 
     setLoading(true);
     try {
-      console.log('Registration payload:', {
-        studentId: formData.studentId,
-        username: formData.username,
-        email: formData.email,
-        phone: formData.phone,
-      });
       await register(formData);
       showSuccess('🎉 Account created successfully!');
       navigate('/home', { replace: true });

@@ -23,12 +23,12 @@ export default function BuyHistory({ orders }) {
     if (order.product_image) {
       try {
         const images = JSON.parse(order.product_image);
-        return images[0] || '/placeholder.png';
+        return images[0] || '/placeholder.svg';
       } catch {
         return order.product_image;
       }
     }
-    return '/placeholder.png';
+    return '/placeholder.svg';
   };
 
   return (

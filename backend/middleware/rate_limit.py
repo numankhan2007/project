@@ -1,8 +1,11 @@
 import os
+import logging
 from fastapi import Request, HTTPException
 import redis.asyncio as aioredis
 
+logger = logging.getLogger(__name__)
 _redis_client = None
+_redis_warned = False  # Track if we've already warned about Redis being unavailable
 
 
 def _get_redis():
@@ -26,8 +29,13 @@ async def rate_limit(request: Request, limit: int = 60, window: int = 60):
             raise HTTPException(429, f"Rate limit exceeded. Try again in {window}s.")
     except HTTPException:
         raise
-    except Exception:
-        pass  # Fail open — don't block requests if Redis is unavailable
+    except Exception as e:
+        # Fail open — don't block requests if Redis is unavailable
+        # Log warning once to avoid log spam
+        global _redis_warned
+        if not _redis_warned:
+            logger.warning(f"Rate limiting unavailable (Redis error: {type(e).__name__}). Failing open.")
+            _redis_warned = True
 
 
 def rate_limit_strict(limit: int = 10, window: int = 60):

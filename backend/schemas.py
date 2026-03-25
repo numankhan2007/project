@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -161,6 +161,16 @@ class OrderResponse(BaseModel):
 
 class ChatMessageCreate(BaseModel):
     message: str
+
+    @field_validator('message')
+    @classmethod
+    def validate_message(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Message cannot be empty')
+        if len(v) > 2000:
+            raise ValueError('Message must be 2000 characters or less')
+        return v
 
 
 class ChatMessageResponse(BaseModel):

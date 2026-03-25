@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import redis
+import os
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
@@ -59,15 +60,23 @@ app = FastAPI(
 )
 
 # ============================================================
-# CORS MIDDLEWARE (Restrict to known origins)
+# CORS MIDDLEWARE (Environment-based origins)
 # ============================================================
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",                    # Local Vite dev server
-    "http://127.0.0.1:5173",                    # Local Vite dev server (IP)
-    "http://localhost:3000",                    # Alternative local dev
-    "http://127.0.0.1:3000",                    # Alternative local dev (IP)
+# Default development origins
+DEFAULT_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
+
+# Get additional origins from environment variable (comma-separated)
+EXTRA_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",")
+EXTRA_ORIGINS = [origin.strip() for origin in EXTRA_ORIGINS if origin.strip()]
+
+# Combine origins
+ALLOWED_ORIGINS = DEFAULT_ORIGINS + EXTRA_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,

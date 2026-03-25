@@ -3,6 +3,7 @@ import random
 import re
 import secrets
 import time
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ from dependencies import get_current_user
 from services.email_service import send_registration_otp_email
 from redis_client import redis_client
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -34,8 +36,9 @@ def log_user_activity(db, register_number: str, username: str, action: str, deta
         )
         db.add(log)
         db.commit()
-    except Exception:
-        pass  # Never crash the main flow because of logging
+    except Exception as e:
+        # Log but don't crash the main flow
+        logger.debug(f"Activity logging failed: {type(e).__name__}: {e}")
 
 
 def _get_client_ip(request: Request) -> str:

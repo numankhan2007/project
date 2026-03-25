@@ -9,7 +9,7 @@ export default function ProductCard({ product, index = 0 }) {
   const isFree = product.price === 0;
 
   // Handle both API format and mock format for images
-  const imageUrl = product.image_urls?.[0] || product.image_url || product.images?.[0] || '/placeholder.png';
+  const imageUrl = product.image_urls?.[0] || product.image_url || product.images?.[0] || '/placeholder.svg';
 
   // Handle both API format and mock format for seller info
   const sellerLocation = product.seller_college || product.seller?.campus || 'Campus';

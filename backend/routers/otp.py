@@ -1,4 +1,5 @@
 import secrets
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -10,6 +11,7 @@ from services.email_service import send_otp_email, send_transaction_complete_ema
 from redis_client import redis_client
 from routers.notifications import create_notification
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/otp", tags=["OTP Handshake"])
 
 DELIVERY_OTP_EXPIRY = 600  # 10 minutes
@@ -154,8 +156,9 @@ async def verify_otp(
                 product_title=product.title,
                 seller_name=seller.username,
             )
-        except Exception:
-            pass  # Don't fail the transaction if email fails
+        except Exception as e:
+            # Log email failure but don't fail the transaction
+            logger.warning(f"Failed to send transaction complete email for order {order.id}: {e}")
 
     # Send notifications to both parties
     product_title = product.title if product else "item"

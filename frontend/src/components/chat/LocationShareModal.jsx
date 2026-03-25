@@ -97,8 +97,8 @@ export default function LocationShareModal({ isOpen, onClose, onSend }) {
           if (data.display_name) {
             setAddress(data.display_name.split(',').slice(0, 3).join(','));
           }
-        } catch (err) {
-          console.log('Could not get address:', err);
+        } catch {
+          // Address lookup failed - non-critical, location still works
         }
       },
       (err) => {

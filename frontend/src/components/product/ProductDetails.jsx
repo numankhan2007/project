@@ -17,7 +17,7 @@ export default function ProductDetails({ product, onOrder, onBack }) {
     ? product.image_urls
     : product.images?.length > 0
       ? product.images
-      : [product.image_url || '/placeholder.png'];
+      : [product.image_url || '/placeholder.svg'];
 
   // Extract condition from description if embedded
   let condition = product.condition;
